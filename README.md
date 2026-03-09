@@ -115,15 +115,29 @@ generated-skills/kol-inversebrah/
 
 ### 作为 Codex Skill 安装
 
-仓库内新增了可安装的 Codex Skill：`skills/copyalpha-kol-factory/`。
+现在可以直接通过 `npx` 安装这个 Skill，而不是手动复制 `skills/` 目录。
+
+```bash
+# npm 发布后推荐这样安装
+npx copyalpha@latest install-skill
+
+# 如果还没发布到 npm，可临时走 GitHub 仓库
+npx github:Jnnndjjsnxbhhunheng/CopyAlpha install-skill
+```
+
+安装完成后：
+
+1. 重启 Codex，让新 Skill 生效
+2. 在 Codex 中直接说：`Use $copyalpha-kol-factory to harvest @inversebrah and forge a new KOL skill.`
 
 这个 Skill 的作用是：
 
-- 自动准备 CopyAlpha 工作区
+- 通过 `npx copyalpha@latest init` 初始化本地工作区
 - 对指定 Twitter/X 用户抓取历史推文
-- 运行 `forge materialize`，直接生成新的 `generated-skills/kol-{username}/`
+- 运行 `npx copyalpha@latest forge materialize @username`
+- 直接生成新的 `generated-skills/kol-{username}/`
 
-安装后，用户就可以让 Codex 使用这个 Skill 来“把某个 KOL 沉淀成新 Skill”。
+如果你要在 npm 发布前测试，也可以给 Skill 脚本设置 `COPYALPHA_NPX_SPEC`，例如指向一个 GitHub 分支包源。
 
 ### 交易分析
 

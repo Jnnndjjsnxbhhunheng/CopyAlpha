@@ -7,6 +7,14 @@
     "copyalpha": "dist/cli.js"
   },
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "skills",
+    ".env.example",
+    "src/forge/templates/skill-md.hbs",
+    "src/storage/schema.sql",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "ts-node src/index.ts",
@@ -19,7 +27,13 @@
     "forge": "ts-node src/cli.ts forge",
     "consult": "ts-node src/cli.ts consult"
   },
-  "keywords": ["kol", "trading", "ai-skill", "onchainos", "crypto"],
+  "keywords": [
+    "kol",
+    "trading",
+    "ai-skill",
+    "onchainos",
+    "crypto"
+  ],
   "author": "Snopp",
   "license": "Apache-2.0",
   "dependencies": {

@@ -5,6 +5,7 @@
  *
  * Usage:
  *   copyalpha init [dir]
+ *   copyalpha install-skill
  *   copyalpha harvest add @username
  *   copyalpha harvest remove @username
  *   copyalpha harvest status
@@ -22,6 +23,7 @@
 
 import { Command } from "commander";
 import fs from "fs";
+import os from "os";
 import path from "path";
 import * as harvest from "./harvest";
 import { forgeKOL } from "./forge";
@@ -55,6 +57,20 @@ program
     console.log("\nNext steps:");
     console.log(`  1. Fill secrets in ${path.join(result.workspaceDir, ".env")}`);
     console.log("  2. Run: copyalpha forge materialize @username");
+  });
+
+program
+  .command("install-skill")
+  .description("Install the bundled Codex skill into ~/.codex/skills")
+  .option("-d, --dest <dir>", "Destination skills directory")
+  .option("-n, --name <name>", "Installed skill directory name", "copyalpha-kol-factory")
+  .option("-f, --force", "Overwrite an existing installed skill")
+  .action((options: InstallSkillOptions) => {
+    const result = installBundledSkill(options);
+
+    console.log(`Installed skill to: ${result.destDir}`);
+    console.log(`Source: ${result.sourceDir}`);
+    console.log("Restart Codex to pick up the new skill.");
   });
 
 // ─── Harvest Commands ───
@@ -350,6 +366,17 @@ interface MaterializeResult {
   forgeResult: Awaited<ReturnType<typeof forgeKOL>>;
 }
 
+interface InstallSkillOptions {
+  dest?: string;
+  name: string;
+  force?: boolean;
+}
+
+interface InstallSkillResult {
+  sourceDir: string;
+  destDir: string;
+}
+
 function initWorkspace(dir: string): InitWorkspaceResult {
   const workspaceDir = path.resolve(process.cwd(), dir);
   const generatedSkillsDir = path.join(workspaceDir, "generated-skills");
@@ -369,6 +396,66 @@ function initWorkspace(dir: string): InitWorkspaceResult {
     generatedSkillsDir,
     envCreated,
   };
+}
+
+function installBundledSkill(
+  options: InstallSkillOptions
+): InstallSkillResult {
+  const sourceDir = resolveBundledSkillDir(options.name);
+  const destRoot = options.dest
+    ? path.resolve(process.cwd(), options.dest)
+    : path.join(resolveCodexHome(), "skills");
+  const destDir = path.join(destRoot, options.name);
+
+  fs.mkdirSync(destRoot, { recursive: true });
+
+  if (fs.existsSync(destDir)) {
+    if (!options.force) {
+      throw new Error(
+        `Skill already exists at ${destDir}. Re-run with --force to overwrite.`
+      );
+    }
+    fs.rmSync(destDir, { recursive: true, force: true });
+  }
+
+  copyDirectory(sourceDir, destDir);
+
+  return { sourceDir, destDir };
+}
+
+function resolveBundledSkillDir(skillName: string): string {
+  const candidates = [
+    path.resolve(__dirname, "..", "skills", skillName),
+    path.resolve(process.cwd(), "skills", skillName),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(path.join(candidate, "SKILL.md"))) {
+      return candidate;
+    }
+  }
+
+  throw new Error(`Unable to locate bundled skill: ${skillName}`);
+}
+
+function resolveCodexHome(): string {
+  return process.env.CODEX_HOME ?? path.join(os.homedir(), ".codex");
+}
+
+function copyDirectory(sourceDir: string, destDir: string): void {
+  fs.mkdirSync(destDir, { recursive: true });
+
+  for (const entry of fs.readdirSync(sourceDir, { withFileTypes: true })) {
+    const sourcePath = path.join(sourceDir, entry.name);
+    const destPath = path.join(destDir, entry.name);
+
+    if (entry.isDirectory()) {
+      copyDirectory(sourcePath, destPath);
+      continue;
+    }
+
+    fs.copyFileSync(sourcePath, destPath);
+  }
 }
 
 async function materializeKOL(

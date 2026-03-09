@@ -1,11 +1,12 @@
 ---
 name: copyalpha-kol-factory
-description: Harvest tweets from a specific Twitter/X user, distill their trading views, and forge a brand new KOL Skill. Use when the user wants to turn @username into a reusable skill, refresh that skill from fresh tweets, or bootstrap CopyAlpha locally for KOL harvesting.
+description: Install and use CopyAlpha through npx to harvest tweets from a specific Twitter/X user, distill their trading views, and forge a brand new KOL Skill. Use when the user wants to turn @username into a reusable skill, refresh that skill from fresh tweets, or bootstrap a local KOL-harvesting workspace without cloning the repo manually.
 ---
 
 # CopyAlpha KOL Factory
 
 Use this skill when the user wants to:
+- install a Codex skill through `npx copyalpha install-skill`
 - harvest tweets from a specific Twitter/X account
 - distill that account into a new skill under `generated-skills/kol-<username>`
 - refresh or rebuild an existing KOL skill from newer tweets
@@ -28,12 +29,13 @@ Use this skill when the user wants to:
 
 ## Bundled scripts
 
-- `scripts/bootstrap_copyalpha.sh`: clones the CopyAlpha repo, installs dependencies, creates `.env` from `.env.example`, and prepares the workspace.
-- `scripts/materialize_kol.sh`: runs the end-to-end `forge materialize` flow for one username.
+- `scripts/bootstrap_copyalpha.sh`: creates a CopyAlpha workspace through `npx copyalpha@latest init`, prepares `.env`, and creates the `generated-skills` directory.
+- `scripts/materialize_kol.sh`: runs `npx copyalpha@latest forge materialize` for one username.
 
 ## Behavior notes
 
-- Prefer the existing workspace over cloning a fresh one.
+- Prefer the existing workspace over creating a fresh one.
 - `forge materialize` both tracks the account and scrapes tweets before forging the new skill.
 - If the user names multiple KOLs, process them one by one.
+- Set `COPYALPHA_NPX_SPEC` if you need to override the package source, for example to test a GitHub branch before npm publish.
 - These scripts use network and package installation, so request approval when needed.
