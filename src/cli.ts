@@ -1,12 +1,16 @@
+#!/usr/bin/env node
+
 /**
  * CLI entry point for CopyAlpha.
  *
  * Usage:
+ *   copyalpha init [dir]
  *   copyalpha harvest add @username
  *   copyalpha harvest remove @username
  *   copyalpha harvest status
  *   copyalpha harvest monitor
  *   copyalpha forge build @username
+ *   copyalpha forge materialize @username
  *   copyalpha forge all
  *   copyalpha consult analyze $TOKEN [question]
  *   copyalpha consult ask @username <question>
@@ -17,6 +21,8 @@
  */
 
 import { Command } from "commander";
+import fs from "fs";
+import path from "path";
 import * as harvest from "./harvest";
 import { forgeKOL } from "./forge";
 import {
@@ -35,6 +41,21 @@ program
   .name("copyalpha")
   .description("把 KOL 变成你的私人 Skill，让 AI 替你抄最聪明的作业")
   .version("2.0.0");
+
+program
+  .command("init")
+  .description("Scaffold a CopyAlpha workspace")
+  .argument("[dir]", "Target directory", ".")
+  .action((dir: string) => {
+    const result = initWorkspace(dir);
+
+    console.log(`Workspace ready at: ${result.workspaceDir}`);
+    console.log(`Env template: ${result.envCreated ? "created" : "already exists"}`);
+    console.log(`Generated skills dir: ${result.generatedSkillsDir}`);
+    console.log("\nNext steps:");
+    console.log(`  1. Fill secrets in ${path.join(result.workspaceDir, ".env")}`);
+    console.log("  2. Run: copyalpha forge materialize @username");
+  });
 
 // ─── Harvest Commands ───
 
@@ -115,6 +136,27 @@ forgeCmd
     }
     if (result.quality.warnings.length > 0) {
       console.log(`Warnings: ${result.quality.warnings.join("; ")}`);
+    }
+  });
+
+forgeCmd
+  .command("materialize <username>")
+  .description("Track, harvest, and forge a brand new KOL Skill")
+  .option("-c, --count <count>", "Historical tweet count to scrape")
+  .action(async (username: string, options: { count?: string }) => {
+    const count = parseOptionalInt(options.count, "count");
+    const result = await materializeKOL(username, count);
+
+    console.log(`\nMaterialized @${result.username} into a new skill.`);
+    console.log(`Tweets scraped: ${result.scrapedCount}`);
+    console.log(`Skill generated at: ${result.forgeResult.skillDir}`);
+    console.log(`Quality score: ${result.forgeResult.quality.score}/100`);
+
+    if (result.forgeResult.quality.issues.length > 0) {
+      console.log(`Issues: ${result.forgeResult.quality.issues.join("; ")}`);
+    }
+    if (result.forgeResult.quality.warnings.length > 0) {
+      console.log(`Warnings: ${result.forgeResult.quality.warnings.join("; ")}`);
     }
   });
 
@@ -291,4 +333,88 @@ function printReport(report: any): void {
   console.log("═".repeat(60));
 }
 
-program.parse();
+program.parseAsync().catch((err: Error) => {
+  console.error(`CopyAlpha failed: ${err.message}`);
+  process.exitCode = 1;
+});
+
+interface InitWorkspaceResult {
+  workspaceDir: string;
+  generatedSkillsDir: string;
+  envCreated: boolean;
+}
+
+interface MaterializeResult {
+  username: string;
+  scrapedCount: number;
+  forgeResult: Awaited<ReturnType<typeof forgeKOL>>;
+}
+
+function initWorkspace(dir: string): InitWorkspaceResult {
+  const workspaceDir = path.resolve(process.cwd(), dir);
+  const generatedSkillsDir = path.join(workspaceDir, "generated-skills");
+  const envPath = path.join(workspaceDir, ".env");
+
+  fs.mkdirSync(workspaceDir, { recursive: true });
+  fs.mkdirSync(generatedSkillsDir, { recursive: true });
+
+  let envCreated = false;
+  if (!fs.existsSync(envPath)) {
+    fs.copyFileSync(resolveEnvExamplePath(), envPath);
+    envCreated = true;
+  }
+
+  return {
+    workspaceDir,
+    generatedSkillsDir,
+    envCreated,
+  };
+}
+
+async function materializeKOL(
+  username: string,
+  count?: number
+): Promise<MaterializeResult> {
+  const normalized = username.replace(/^@/, "").toLowerCase();
+
+  await harvest.addKOL(normalized);
+  const scrapedCount = await harvest.scrapeHistory(normalized, count);
+  const forgeResult = await forgeKOL(normalized);
+
+  return {
+    username: normalized,
+    scrapedCount,
+    forgeResult,
+  };
+}
+
+function resolveEnvExamplePath(): string {
+  const candidates = [
+    path.resolve(__dirname, "..", ".env.example"),
+    path.resolve(process.cwd(), ".env.example"),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  throw new Error("Unable to find .env.example for workspace initialization");
+}
+
+function parseOptionalInt(
+  value: string | undefined,
+  flagName: string
+): number | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = parseInt(value, 10);
+  if (Number.isNaN(parsed) || parsed <= 0) {
+    throw new Error(`--${flagName} must be a positive integer`);
+  }
+
+  return parsed;
+}

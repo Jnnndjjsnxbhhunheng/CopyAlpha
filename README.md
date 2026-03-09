@@ -87,8 +87,19 @@ npx ts-node src/cli.ts harvest monitor
 # 为单个 KOL 生成 Skill
 npx ts-node src/cli.ts forge build inversebrah
 
+# 一键采集 + 蒸馏 + 锻造成新 Skill
+npx ts-node src/cli.ts forge materialize @inversebrah
+npx ts-node src/cli.ts forge materialize @DefiIgnas --count 800
+
 # 重建所有 KOL Skill
 npx ts-node src/cli.ts forge all
+```
+
+如果你把本项目作为 npm CLI 发布或本地 `npm link`，同样的命令也可以写成：
+
+```bash
+copyalpha init
+copyalpha forge materialize @inversebrah
 ```
 
 生成的 Skill 存放在 `generated-skills/kol-{username}/` 目录：
@@ -101,6 +112,18 @@ generated-skills/kol-inversebrah/
 ├── signals-history.json  # 历史信号 + 回测结果
 └── style-guide.json      # 分析风格指南
 ```
+
+### 作为 Codex Skill 安装
+
+仓库内新增了可安装的 Codex Skill：`skills/copyalpha-kol-factory/`。
+
+这个 Skill 的作用是：
+
+- 自动准备 CopyAlpha 工作区
+- 对指定 Twitter/X 用户抓取历史推文
+- 运行 `forge materialize`，直接生成新的 `generated-skills/kol-{username}/`
+
+安装后，用户就可以让 Codex 使用这个 Skill 来“把某个 KOL 沉淀成新 Skill”。
 
 ### 交易分析
 

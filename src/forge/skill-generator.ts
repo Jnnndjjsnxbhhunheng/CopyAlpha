@@ -40,7 +40,7 @@ Handlebars.registerHelper("action_label", (s: string) => {
 });
 
 const SKILL_MD_TEMPLATE = fs.readFileSync(
-  path.join(__dirname, "templates", "skill-md.hbs"),
+  resolveSkillTemplatePath(),
   "utf-8"
 );
 
@@ -237,4 +237,19 @@ function riskLabel(risk: string): string {
     aggressive: "激进",
   };
   return map[risk] ?? risk;
+}
+
+function resolveSkillTemplatePath(): string {
+  const candidates = [
+    path.join(__dirname, "templates", "skill-md.hbs"),
+    path.resolve(__dirname, "..", "..", "src", "forge", "templates", "skill-md.hbs"),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  throw new Error("Unable to locate skill-md.hbs template");
 }

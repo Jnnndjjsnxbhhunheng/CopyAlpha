@@ -3,6 +3,9 @@
   "version": "2.0.0",
   "description": "把 KOL 变成你的私人 Skill，让 AI 替你抄最聪明的作业",
   "main": "dist/index.js",
+  "bin": {
+    "copyalpha": "dist/cli.js"
+  },
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
@@ -11,6 +14,7 @@
     "lint:fix": "eslint src/ --ext .ts --fix",
     "test": "jest",
     "test:watch": "jest --watch",
+    "prepare": "npm run build",
     "harvest": "ts-node src/cli.ts harvest",
     "forge": "ts-node src/cli.ts forge",
     "consult": "ts-node src/cli.ts consult"

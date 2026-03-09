@@ -17,7 +17,7 @@ export function getDb(): Database.Database {
 }
 
 function initSchema(database: Database.Database): void {
-  const schemaPath = path.join(__dirname, "schema.sql");
+  const schemaPath = resolveSchemaPath();
   const schema = fs.readFileSync(schemaPath, "utf-8");
   database.exec(schema);
 }
@@ -27,6 +27,21 @@ export function closeDb(): void {
     db.close();
     db = null;
   }
+}
+
+function resolveSchemaPath(): string {
+  const candidates = [
+    path.join(__dirname, "schema.sql"),
+    path.resolve(__dirname, "..", "..", "src", "storage", "schema.sql"),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  throw new Error("Unable to locate schema.sql");
 }
 
 // ─── Tracked KOLs ───
