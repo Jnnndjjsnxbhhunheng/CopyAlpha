@@ -1,0 +1,42 @@
+{
+  "name": "copyalpha",
+  "version": "2.0.0",
+  "description": "把 KOL 变成你的私人 Skill，让 AI 替你抄最聪明的作业",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/index.ts",
+    "lint": "eslint src/ --ext .ts",
+    "lint:fix": "eslint src/ --ext .ts --fix",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "harvest": "ts-node src/cli.ts harvest",
+    "forge": "ts-node src/cli.ts forge",
+    "consult": "ts-node src/cli.ts consult"
+  },
+  "keywords": ["kol", "trading", "ai-skill", "onchainos", "crypto"],
+  "author": "Snopp",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "better-sqlite3": "^11.7.0",
+    "cheerio": "^1.0.0",
+    "commander": "^13.1.0",
+    "dotenv": "^16.4.7",
+    "handlebars": "^4.7.8",
+    "node-cron": "^3.0.3",
+    "twitter-api-v2": "^1.18.2"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.13.0",
+    "@types/node-cron": "^3.0.11",
+    "eslint": "^9.19.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  }
+}
