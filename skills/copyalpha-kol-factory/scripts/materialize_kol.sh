@@ -5,6 +5,7 @@ workspace_dir="${1:?workspace_dir is required}"
 username="${2:?username is required}"
 history_depth="${3:-}"
 npx_spec="${COPYALPHA_NPX_SPEC:-copyalpha@latest}"
+install_targets="${COPYALPHA_INSTALL_TARGETS:-bundle,codex,claude}"
 
 cd "$workspace_dir"
 
@@ -13,7 +14,7 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
-cmd=(npx --yes "$npx_spec" forge materialize "$username")
+cmd=(npx --yes "$npx_spec" forge materialize "$username" --install --targets "$install_targets" --force-install)
 
 if [ -n "$history_depth" ]; then
   cmd+=(--count "$history_depth")

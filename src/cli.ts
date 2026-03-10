@@ -12,6 +12,7 @@
  *   copyalpha harvest monitor
  *   copyalpha forge build @username
  *   copyalpha forge materialize @username
+ *   copyalpha forge install @username
  *   copyalpha forge all
  *   copyalpha consult analyze $TOKEN [question]
  *   copyalpha consult ask @username <question>
@@ -23,10 +24,16 @@
 
 import { Command } from "commander";
 import fs from "fs";
-import os from "os";
 import path from "path";
 import * as harvest from "./harvest";
 import { forgeKOL } from "./forge";
+import {
+  installAgentSkillBundle,
+  parseInstallTargets,
+  type AgentInstallOptions,
+  type AgentInstallResult,
+} from "./forge";
+import { config } from "./shared/config";
 import {
   analyze,
   askKOL,
@@ -56,21 +63,23 @@ program
     console.log(`Generated skills dir: ${result.generatedSkillsDir}`);
     console.log("\nNext steps:");
     console.log(`  1. Fill secrets in ${path.join(result.workspaceDir, ".env")}`);
-    console.log("  2. Run: copyalpha forge materialize @username");
+    console.log("  2. Run: copyalpha forge materialize @username --install");
   });
 
 program
   .command("install-skill")
-  .description("Install the bundled Codex skill into ~/.codex/skills")
-  .option("-d, --dest <dir>", "Destination skills directory")
-  .option("-n, --name <name>", "Installed skill directory name", "copyalpha-kol-factory")
-  .option("-f, --force", "Overwrite an existing installed skill")
-  .action((options: InstallSkillOptions) => {
-    const result = installBundledSkill(options);
+  .description("Install the bundled factory skill for Codex, Claude Code, and a generic agent bundle")
+  .option("-n, --name <name>", "Bundled skill directory name", "copyalpha-kol-factory")
+  .option("-t, --targets <targets>", "Comma-separated install targets: bundle,codex,claude", "bundle,codex,claude")
+  .option("-f, --force", "Overwrite existing installed targets")
+  .option("--bundle-home <dir>", "Override generic bundle home")
+  .option("--codex-home <dir>", "Override Codex home")
+  .option("--claude-home <dir>", "Override Claude home")
+  .action((options: RootInstallSkillOptions) => {
+    const result = installBundledFactorySkill(options);
 
-    console.log(`Installed skill to: ${result.destDir}`);
-    console.log(`Source: ${result.sourceDir}`);
-    console.log("Restart Codex to pick up the new skill.");
+    printInstallResults("Factory skill installed", result.installResults);
+    console.log("Restart your agent tool to pick up newly installed skills/subagents.");
   });
 
 // ─── Harvest Commands ───
@@ -143,7 +152,7 @@ forgeCmd
   .command("build <username>")
   .description("Generate/update a KOL Skill")
   .action(async (username: string) => {
-    const normalized = username.replace(/^@/, "").toLowerCase();
+    const normalized = normalizeUsername(username);
     const result = await forgeKOL(normalized);
     console.log(`\nSkill generated at: ${result.skillDir}`);
     console.log(`Quality score: ${result.quality.score}/100`);
@@ -157,11 +166,17 @@ forgeCmd
 
 forgeCmd
   .command("materialize <username>")
-  .description("Track, harvest, and forge a brand new KOL Skill")
+  .description("Track, harvest, forge, and optionally install a brand new KOL Skill")
   .option("-c, --count <count>", "Historical tweet count to scrape")
-  .action(async (username: string, options: { count?: string }) => {
+  .option("--install", "Install the generated skill into global agent locations")
+  .option("-t, --targets <targets>", "Comma-separated install targets: bundle,codex,claude", "bundle,codex,claude")
+  .option("--force-install", "Overwrite existing installed skill targets")
+  .option("--bundle-home <dir>", "Override generic bundle home")
+  .option("--codex-home <dir>", "Override Codex home")
+  .option("--claude-home <dir>", "Override Claude home")
+  .action(async (username: string, options: MaterializeCliOptions) => {
     const count = parseOptionalInt(options.count, "count");
-    const result = await materializeKOL(username, count);
+    const result = await materializeKOL(username, count, options);
 
     console.log(`\nMaterialized @${result.username} into a new skill.`);
     console.log(`Tweets scraped: ${result.scrapedCount}`);
@@ -174,6 +189,26 @@ forgeCmd
     if (result.forgeResult.quality.warnings.length > 0) {
       console.log(`Warnings: ${result.forgeResult.quality.warnings.join("; ")}`);
     }
+    if (result.installResults.length > 0) {
+      printInstallResults("Generated skill installed", result.installResults);
+    }
+  });
+
+forgeCmd
+  .command("install <username>")
+  .description("Install an existing generated KOL skill into global agent locations")
+  .option("-t, --targets <targets>", "Comma-separated install targets: bundle,codex,claude", "bundle,codex,claude")
+  .option("-f, --force", "Overwrite existing installed skill targets")
+  .option("--bundle-home <dir>", "Override generic bundle home")
+  .option("--codex-home <dir>", "Override Codex home")
+  .option("--claude-home <dir>", "Override Claude home")
+  .action((username: string, options: GlobalInstallCliOptions) => {
+    const result = installGeneratedSkill(username, {
+      ...options,
+      force: options.force,
+    });
+
+    printInstallResults("Generated skill installed", result.installResults);
   });
 
 forgeCmd
@@ -360,21 +395,34 @@ interface InitWorkspaceResult {
   envCreated: boolean;
 }
 
-interface MaterializeResult {
-  username: string;
-  scrapedCount: number;
-  forgeResult: Awaited<ReturnType<typeof forgeKOL>>;
+interface GlobalInstallCliOptions {
+  targets?: string;
+  force?: boolean;
+  bundleHome?: string;
+  codexHome?: string;
+  claudeHome?: string;
 }
 
-interface InstallSkillOptions {
-  dest?: string;
+interface RootInstallSkillOptions extends GlobalInstallCliOptions {
   name: string;
-  force?: boolean;
+}
+
+interface MaterializeCliOptions extends GlobalInstallCliOptions {
+  count?: string;
+  install?: boolean;
+  forceInstall?: boolean;
 }
 
 interface InstallSkillResult {
   sourceDir: string;
-  destDir: string;
+  installResults: AgentInstallResult[];
+}
+
+interface MaterializeResult {
+  username: string;
+  scrapedCount: number;
+  forgeResult: Awaited<ReturnType<typeof forgeKOL>>;
+  installResults: AgentInstallResult[];
 }
 
 function initWorkspace(dir: string): InitWorkspaceResult {
@@ -398,29 +446,78 @@ function initWorkspace(dir: string): InitWorkspaceResult {
   };
 }
 
-function installBundledSkill(
-  options: InstallSkillOptions
+function installBundledFactorySkill(
+  options: RootInstallSkillOptions
 ): InstallSkillResult {
   const sourceDir = resolveBundledSkillDir(options.name);
-  const destRoot = options.dest
-    ? path.resolve(process.cwd(), options.dest)
-    : path.join(resolveCodexHome(), "skills");
-  const destDir = path.join(destRoot, options.name);
+  const installResults = installAgentSkillBundle(
+    sourceDir,
+    toAgentInstallOptions(options, options.force)
+  );
 
-  fs.mkdirSync(destRoot, { recursive: true });
+  return {
+    sourceDir,
+    installResults,
+  };
+}
 
-  if (fs.existsSync(destDir)) {
-    if (!options.force) {
-      throw new Error(
-        `Skill already exists at ${destDir}. Re-run with --force to overwrite.`
-      );
+function installGeneratedSkill(
+  username: string,
+  options: GlobalInstallCliOptions
+): InstallSkillResult {
+  const normalized = normalizeUsername(username);
+  const sourceDir = resolveGeneratedSkillDir(normalized);
+  const installResults = installAgentSkillBundle(
+    sourceDir,
+    {
+      ...toAgentInstallOptions(options, options.force),
+      installedName: `kol-${normalized}`,
     }
-    fs.rmSync(destDir, { recursive: true, force: true });
-  }
+  );
 
-  copyDirectory(sourceDir, destDir);
+  return {
+    sourceDir,
+    installResults,
+  };
+}
 
-  return { sourceDir, destDir };
+async function materializeKOL(
+  username: string,
+  count: number | undefined,
+  options: MaterializeCliOptions
+): Promise<MaterializeResult> {
+  const normalized = normalizeUsername(username);
+
+  await harvest.addKOL(normalized);
+  const scrapedCount = await harvest.scrapeHistory(normalized, count);
+  const forgeResult = await forgeKOL(normalized);
+
+  const installResults = options.install
+    ? installGeneratedSkill(normalized, {
+        ...options,
+        force: options.forceInstall,
+      }).installResults
+    : [];
+
+  return {
+    username: normalized,
+    scrapedCount,
+    forgeResult,
+    installResults,
+  };
+}
+
+function toAgentInstallOptions(
+  options: GlobalInstallCliOptions,
+  force = false
+): AgentInstallOptions {
+  return {
+    targets: parseInstallTargets(options.targets),
+    force,
+    bundleHome: options.bundleHome,
+    codexHome: options.codexHome,
+    claudeHome: options.claudeHome,
+  };
 }
 
 function resolveBundledSkillDir(skillName: string): string {
@@ -438,41 +535,14 @@ function resolveBundledSkillDir(skillName: string): string {
   throw new Error(`Unable to locate bundled skill: ${skillName}`);
 }
 
-function resolveCodexHome(): string {
-  return process.env.CODEX_HOME ?? path.join(os.homedir(), ".codex");
-}
-
-function copyDirectory(sourceDir: string, destDir: string): void {
-  fs.mkdirSync(destDir, { recursive: true });
-
-  for (const entry of fs.readdirSync(sourceDir, { withFileTypes: true })) {
-    const sourcePath = path.join(sourceDir, entry.name);
-    const destPath = path.join(destDir, entry.name);
-
-    if (entry.isDirectory()) {
-      copyDirectory(sourcePath, destPath);
-      continue;
-    }
-
-    fs.copyFileSync(sourcePath, destPath);
+function resolveGeneratedSkillDir(username: string): string {
+  const skillDir = path.join(config.paths.generatedSkills, `kol-${username}`);
+  if (!fs.existsSync(path.join(skillDir, "SKILL.md"))) {
+    throw new Error(
+      `Generated skill for @${username} not found. Run: copyalpha forge materialize @${username}`
+    );
   }
-}
-
-async function materializeKOL(
-  username: string,
-  count?: number
-): Promise<MaterializeResult> {
-  const normalized = username.replace(/^@/, "").toLowerCase();
-
-  await harvest.addKOL(normalized);
-  const scrapedCount = await harvest.scrapeHistory(normalized, count);
-  const forgeResult = await forgeKOL(normalized);
-
-  return {
-    username: normalized,
-    scrapedCount,
-    forgeResult,
-  };
+  return skillDir;
 }
 
 function resolveEnvExamplePath(): string {
@@ -504,4 +574,22 @@ function parseOptionalInt(
   }
 
   return parsed;
+}
+
+function normalizeUsername(username: string): string {
+  return username.replace(/^@/, "").toLowerCase();
+}
+
+function printInstallResults(
+  label: string,
+  results: AgentInstallResult[]
+): void {
+  if (results.length === 0) {
+    return;
+  }
+
+  console.log(`\n${label}:`);
+  for (const result of results) {
+    console.log(`  [${result.target}] ${result.destPath}`);
+  }
 }

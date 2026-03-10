@@ -1,235 +1,277 @@
 # CopyAlpha
 
-> **把 KOL 变成你的私人 Skill，让 AI 替你抄最聪明的作业**
+> 把 Twitter / X 上的 KOL，沉淀成可复用、可全局安装的 Agent Skill
 
-CopyAlpha 是一个 AI 原生的 KOL 知识提炼系统。它从推特 KOL 的历史推文中提取结构化交易知识，打包为可复用的 **KOL Skill**，让 AI Agent 在做交易分析时像"请教专家"一样调用这些 Skill，并结合 OKX OnchainOS 链上数据输出综合决策。
+CopyAlpha 是一个 **KOL Skill 工厂**。
+它会抓取指定 KOL 的历史推文，提炼交易风格、叙事判断、Token 观点和重复模式，然后生成一个新的 **KOL Skill**，并可自动安装给不同 agent 使用。
 
-**这不是跟单机器人** — 这是一个 Skill 工厂。KOL Skill 是持久化、可迭代的知识资产，不是一次性信号。
+它不是跟单机器人，也不是一次性摘要工具。
+它更像一个“专家知识压缩器”——把某个 KOL 过去公开表达过的交易思路，整理成一个可以长期复用的技能包。
 
-## 架构
+## 这项目现在能做什么
 
-```
-推特 KOL 推文 → [Harvest 采集] → [Distill 蒸馏] → [Forge 锻造] → KOL Skill
-                                                                    │
-                    AI Agent: "分析 $PEPE"                           │
-                        │                                           │
-                        ├── [Consult] 加载 KOL Skills ◀─────────────┘
-                        ├── [Consult] 调用 OnchainOS (行情/持仓/链上数据)
-                        └── 综合输出: 买/卖/观望 + 理由 + KOL 共识
-```
+- 抓取指定 Twitter / X 用户的历史推文
+- 用 LLM 提炼交易信号、交易画像、宏观看法、重复模式
+- 生成新的 `kol-{username}` Skill
+- 自动安装到多种 agent 运行环境
+  - 通用 portable bundle
+  - Codex / OpenAI 风格 Skill
+  - Claude Code subagent
 
-| 层 | 职责 | 调用频率 |
-|---|------|---------|
-| **Harvest** | 抓取推文 (Twitter API / Nitter 降级) | 定时轮询 |
-| **Distill** | LLM 提炼信号、画像、模式、回测 | 每批新推文 |
-| **Forge** | 打包为 KOL Skill (SKILL.md + JSON) | 每日/每周 |
-| **Consult** | 加载 Skill + OnchainOS → 综合分析 | 按需实时 |
+## 用户全程使用流程
 
-## 快速开始
+### 1. 安装“工厂 Skill”
 
-### 环境要求
-
-- Node.js >= 16
-- npm >= 8
-
-### 安装
+推荐流程是：先安装一个通用的工厂 Skill，后续都通过它来生产新的 KOL Skill。
 
 ```bash
-git clone https://github.com/Jnnndjjsnxbhhunheng/CopyAlpha.git
-cd CopyAlpha
-bash install.sh
-```
-
-或手动安装：
-
-```bash
-npm install
-cp .env.example .env
-# 编辑 .env 填入 API Keys
-```
-
-### 配置
-
-编辑 `.env` 文件，填入必要的 API 密钥：
-
-| 变量 | 必需 | 说明 |
-|------|------|------|
-| `TWITTER_BEARER_TOKEN` | 是 | Twitter API v2 Bearer Token |
-| `ANTHROPIC_API_KEY` | 是 | Anthropic Claude API Key |
-| `NITTER_INSTANCES` | 否 | Nitter 实例列表 (Twitter API 降级方案) |
-| `OKX_API_KEY` | 否 | OKX OnchainOS API Key (链上数据验证) |
-| `OKX_SECRET_KEY` | 否 | OKX Secret Key |
-| `OKX_PASSPHRASE` | 否 | OKX Passphrase |
-| `WALLET_ADDRESS` | 否 | 钱包地址 (持仓查询) |
-| `LLM_MODEL` | 否 | LLM 模型 (默认 claude-sonnet-4-20250514) |
-
-## 使用方式
-
-所有命令通过 `npx ts-node src/cli.ts` 运行：
-
-### 采集 KOL 推文
-
-```bash
-# 添加 KOL 并抓取历史推文
-npx ts-node src/cli.ts harvest add @inversebrah
-npx ts-node src/cli.ts harvest add @DefiIgnas
-
-# 查看采集状态
-npx ts-node src/cli.ts harvest status
-
-# 启动增量监控
-npx ts-node src/cli.ts harvest monitor
-```
-
-### 生成 KOL Skill
-
-```bash
-# 为单个 KOL 生成 Skill
-npx ts-node src/cli.ts forge build inversebrah
-
-# 一键采集 + 蒸馏 + 锻造成新 Skill
-npx ts-node src/cli.ts forge materialize @inversebrah
-npx ts-node src/cli.ts forge materialize @DefiIgnas --count 800
-
-# 重建所有 KOL Skill
-npx ts-node src/cli.ts forge all
-```
-
-如果你把本项目作为 npm CLI 发布或本地 `npm link`，同样的命令也可以写成：
-
-```bash
-copyalpha init
-copyalpha forge materialize @inversebrah
-```
-
-生成的 Skill 存放在 `generated-skills/kol-{username}/` 目录：
-
-```
-generated-skills/kol-inversebrah/
-├── SKILL.md              # AI Agent 读取的入口文档
-├── profile.json          # KOL 画像 (风格/胜率/可信度)
-├── knowledge.json        # 知识图谱 (Token 观点/宏观判断)
-├── signals-history.json  # 历史信号 + 回测结果
-└── style-guide.json      # 分析风格指南
-```
-
-### 作为 Codex Skill 安装
-
-现在可以直接通过 `npx` 安装这个 Skill，而不是手动复制 `skills/` 目录。
-
-```bash
-# npm 发布后推荐这样安装
+# npm 发布后推荐
 npx copyalpha@latest install-skill
 
-# 如果还没发布到 npm，可临时走 GitHub 仓库
+# 如果还没发布到 npm，可临时从 GitHub 直接运行
 npx github:Jnnndjjsnxbhhunheng/CopyAlpha install-skill
 ```
 
-安装完成后：
+这个命令会把 `copyalpha-kol-factory` 安装到以下位置：
 
-1. 重启 Codex，让新 Skill 生效
-2. 在 Codex 中直接说：`Use $copyalpha-kol-factory to harvest @inversebrah and forge a new KOL skill.`
+- 通用 portable bundle：`~/.agent-skills/copyalpha-kol-factory/`
+- Codex / OpenAI 风格：`~/.codex/skills/copyalpha-kol-factory/`
+- Claude Code：`~/.claude/agents/copyalpha-kol-factory.md`
 
-这个 Skill 的作用是：
+### 2. 重启你的 agent 工具
 
-- 通过 `npx copyalpha@latest init` 初始化本地工作区
-- 对指定 Twitter/X 用户抓取历史推文
-- 运行 `npx copyalpha@latest forge materialize @username`
-- 直接生成新的 `generated-skills/kol-{username}/`
+安装完成后，重启你正在使用的 agent 工具，例如：
 
-如果你要在 npm 发布前测试，也可以给 Skill 脚本设置 `COPYALPHA_NPX_SPEC`，例如指向一个 GitHub 分支包源。
+- Claude Code
+- Codex
+- 其他支持读取本地 skill / subagent 的 agent
 
-### 交易分析
+### 3. 在 agent 中调用工厂 Skill
 
-```bash
-# 综合分析 (KOL 观点 + 链上数据)
-npx ts-node src/cli.ts consult analyze PEPE
-npx ts-node src/cli.ts consult analyze ETH "现在适合加仓吗？"
+直接对 agent 说：
 
-# 向特定 KOL 提问
-npx ts-node src/cli.ts consult ask inversebrah "怎么看 SOL 生态？"
-
-# 多 KOL 共识
-npx ts-node src/cli.ts consult consensus SOL
-
-# 评价交易想法
-npx ts-node src/cli.ts consult critique "用 5% 仓位做多 ARB"
-
-# 机会推荐
-npx ts-node src/cli.ts consult recommend
-
-# KOL 龙虎榜
-npx ts-node src/cli.ts consult leaderboard
+```text
+Use $copyalpha-kol-factory to harvest @inversebrah and forge a new KOL skill.
 ```
 
-## 开发
+也可以用中文表达，例如：
+
+```text
+用 copyalpha-kol-factory 抓取 @inversebrah 的推文，并生成一个新的 KOL Skill。
+```
+
+### 4. 填写工作区配置
+
+工厂 Skill 会先初始化一个本地工作区，然后要求你填写 `.env`。
+
+必填：
+
+- `TWITTER_BEARER_TOKEN`
+- `ANTHROPIC_API_KEY`
+
+可选：
+
+- `NITTER_INSTANCES`
+- `OKX_API_KEY`
+- `OKX_SECRET_KEY`
+- `OKX_PASSPHRASE`
+- `WALLET_ADDRESS`
+- `LLM_MODEL`
+
+### 5. 工厂 Skill 自动完成采集、蒸馏、安装
+
+底层等价于执行：
 
 ```bash
-# 构建
+npx copyalpha@latest init
+npx copyalpha@latest forge materialize @inversebrah --install --targets bundle,codex,claude
+```
+
+这一步会自动完成：
+
+- 追踪该 KOL
+- 抓取历史推文
+- 提取交易信号
+- 蒸馏交易风格 / 宏观看法 / Token 观点 / 重复模式
+- 生成新的 `kol-{username}` Skill
+- 把这个新 Skill 安装到全局 agent 目录
+
+### 6. 之后直接使用新生成的 KOL Skill
+
+生成并安装完成后，你就可以在 agent 里继续用这个新 Skill：
+
+```text
+Use $kol-inversebrah to analyze SOL.
+```
+
+或者：
+
+```text
+参考 @inversebrah 的历史交易风格，帮我看一下 PEPE。
+```
+
+## 生成结果长什么样
+
+每个 KOL 最终会产出一个独立技能包：
+
+```text
+generated-skills/kol-inversebrah/
+├── SKILL.md              # 通用 Skill 入口 / portable bundle 说明
+├── claude-agent.md       # Claude Code subagent 适配文件
+├── agents/openai.yaml    # Codex / OpenAI 风格元数据
+├── profile.json          # KOL 画像
+├── knowledge.json        # Token 观点 / 宏观判断 / 叙事
+├── signals-history.json  # 提取出的历史信号
+└── style-guide.json      # 分析风格指南
+```
+
+## 新 Skill 会安装到哪里
+
+默认会同时安装到 3 个目标：
+
+| 目标 | 默认位置 | 用途 |
+|---|---|---|
+| 通用 bundle | `~/.agent-skills/kol-{username}/` | 作为跨 agent 的 portable skill bundle |
+| Codex / OpenAI 风格 | `~/.codex/skills/kol-{username}/` | 给 Codex / OpenAI 风格环境直接读取 |
+| Claude Code | `~/.claude/agents/kol-{username}.md` | 给 Claude Code 作为 subagent 使用 |
+
+如果你只想安装到部分目标，也可以手动指定：
+
+```bash
+npx copyalpha@latest forge materialize @inversebrah --install --targets claude
+npx copyalpha@latest forge materialize @inversebrah --install --targets bundle,codex
+```
+
+## 命令行直接使用
+
+如果你不想通过 agent 对话，也可以直接用 CLI。下面默认你已经能调用 `copyalpha`（例如通过 npm 发布包、`npm link` 或等价方式安装）。
+
+### 初始化工作区
+
+```bash
+copyalpha init
+```
+
+### 安装工厂 Skill
+
+```bash
+copyalpha install-skill
+```
+
+### 一键生成并安装新的 KOL Skill
+
+```bash
+copyalpha forge materialize @inversebrah --install
+copyalpha forge materialize @DefiIgnas --count 800 --install
+```
+
+### 安装已经生成好的 KOL Skill
+
+```bash
+copyalpha forge install inversebrah
+copyalpha forge install inversebrah --targets claude
+```
+
+### 只生成、不安装
+
+```bash
+copyalpha forge build inversebrah
+```
+
+### 采集命令
+
+```bash
+copyalpha harvest add @inversebrah
+copyalpha harvest status
+copyalpha harvest monitor
+```
+
+### 咨询命令
+
+```bash
+copyalpha consult analyze PEPE
+copyalpha consult ask inversebrah "怎么看 SOL 生态？"
+copyalpha consult consensus SOL
+copyalpha consult critique "用 5% 仓位做多 ARB"
+copyalpha consult recommend
+copyalpha consult leaderboard
+```
+
+## 环境变量
+
+编辑工作区中的 `.env`：
+
+| 变量 | 必需 | 说明 |
+|---|---|---|
+| `TWITTER_BEARER_TOKEN` | 是 | Twitter API v2 Bearer Token |
+| `ANTHROPIC_API_KEY` | 是 | Anthropic Claude API Key |
+| `NITTER_INSTANCES` | 否 | Nitter 实例列表，作为降级抓取方案 |
+| `OKX_API_KEY` | 否 | OKX OnchainOS API Key |
+| `OKX_SECRET_KEY` | 否 | OKX Secret Key |
+| `OKX_PASSPHRASE` | 否 | OKX Passphrase |
+| `WALLET_ADDRESS` | 否 | 钱包地址 |
+| `LLM_MODEL` | 否 | 默认 `claude-sonnet-4-20250514` |
+| `HARVEST_INTERVAL_SECONDS` | 否 | 增量监控轮询间隔 |
+| `HARVEST_HISTORY_DEPTH` | 否 | 默认历史抓取深度 |
+| `HARVEST_MAX_CONCURRENT` | 否 | 最大并发抓取数 |
+
+## 项目工作流
+
+```text
+Twitter / X KOL 推文
+  ↓
+Harvest 采集
+  ↓
+Distill 蒸馏
+  ↓
+Forge 锻造
+  ↓
+KOL Skill Bundle
+  ├── portable bundle
+  ├── Codex / OpenAI skill
+  └── Claude Code subagent
+```
+
+## 各模块职责
+
+| 模块 | 职责 |
+|---|---|
+| `Harvest` | 抓取推文，支持 Twitter API / Nitter / 降级方案 |
+| `Distill` | 用 LLM 提取交易信号、风格、叙事、模式 |
+| `Forge` | 生成 KOL Skill 文件，并安装到不同 agent 目标 |
+| `Consult` | 加载 KOL Skills，结合链上数据输出综合分析 |
+
+## 本地开发
+
+```bash
+npm install
 npm run build
-
-# 测试
 npm test
+```
 
-# 单个测试
-npx jest tests/parser.test.ts
+常用命令：
 
-# 类型检查
+```bash
+npx jest tests/agent-skill-installer.test.ts --runInBand
 npx tsc --noEmit
-
-# 也可以用 Makefile
-make test
-make build
-make lint
 ```
 
-## 项目结构
+## 适用场景
 
-```
-src/
-├── harvest/          # 采集层: Twitter 抓取 + 增量监控
-├── distill/          # 蒸馏层: LLM 信号提取/画像/模式/回测
-├── forge/            # 锻造层: KOL Skill 生成 + 质量检查
-├── consult/          # 咨询层: 综合分析 + OnchainOS 桥接
-├── storage/          # 存储层: SQLite
-├── shared/           # 共享: 配置 + LLM 客户端
-├── types.ts          # 全局类型定义
-├── cli.ts            # CLI 入口
-└── index.ts          # 编程式 API 入口
-tests/                # 测试
-generated-skills/     # 生成的 KOL Skills
-```
+适合以下需求：
 
-## 技术栈
+- 你想把某个 KOL 的历史观点整理成一个长期可复用的 agent skill
+- 你希望同一个 KOL Skill 同时给 Claude Code、Codex、其他 agent 使用
+- 你想做“多 KOL 共识分析”，而不是手工翻历史推文
+- 你想把 KOL 的判断模式沉淀成结构化知识，而不是一次性总结
 
-| 组件 | 选型 |
-|------|------|
-| 运行时 | Node.js + TypeScript (strict) |
-| LLM | Anthropic Claude Sonnet |
-| 存储 | SQLite (better-sqlite3) |
-| 推特抓取 | twitter-api-v2 + cheerio |
-| 链上数据 | OKX OnchainOS Skills |
-| 模板引擎 | Handlebars |
-| 定时任务 | node-cron |
-| CLI | Commander.js |
+## 注意事项
 
-## 与 OnchainOS 的关系
-
-CopyAlpha 不替代 OnchainOS，而是作为其上游消费者：
-
-- `okx-wallet-portfolio` — 查询用户持仓
-- `okx-dex-market` — 实时行情、K线、Smart Money 流向
-- `okx-dex-token` — Token 元数据、持仓分布
-- `okx-dex-swap` — 交易执行 (后续阶段)
-
-当 OnchainOS 不可用时，CopyAlpha 降级为纯 KOL 观点分析，并在报告中标注缺少链上验证。
-
-## 免责声明
-
-- KOL 观点仅供参考，最终决策以链上数据为准
-- 所有交易操作需要用户确认
+- KOL 观点是历史归纳，不等于当前实时观点
+- 生成出的 Skill 适合作为“专家参考”，不应替代实时市场与链上验证
+- 当 KOL 观点与实时链上数据冲突时，应优先相信当前数据
 - 这不是投资建议
 
 ## License
 
-[Apache-2.0](LICENSE)
+Apache-2.0

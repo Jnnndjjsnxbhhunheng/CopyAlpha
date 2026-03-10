@@ -10,6 +10,8 @@ import { distillKOL } from "../distill";
 import { generateSkill } from "./skill-generator";
 import { checkQuality, type QualityReport } from "./quality-checker";
 export { incrementalUpdate, decideUpdateStrategy } from "./skill-updater";
+export { installAgentSkillBundle, parseInstallTargets } from "./agent-skill-installer";
+export type { AgentInstallTarget, AgentInstallOptions, AgentInstallResult } from "./agent-skill-installer";
 
 export interface ForgeResult {
   skillDir: string;

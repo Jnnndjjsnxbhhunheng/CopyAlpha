@@ -17,3 +17,4 @@ export type {
   BacktestResult,
   TrackedKOL,
 } from "./types";
+export type { AgentInstallTarget, AgentInstallOptions, AgentInstallResult } from "./forge/agent-skill-installer";

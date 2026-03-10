@@ -1,15 +1,15 @@
 ---
 name: copyalpha-kol-factory
-description: Install and use CopyAlpha through npx to harvest tweets from a specific Twitter/X user, distill their trading views, and forge a brand new KOL Skill. Use when the user wants to turn @username into a reusable skill, refresh that skill from fresh tweets, or bootstrap a local KOL-harvesting workspace without cloning the repo manually.
+description: Install and use CopyAlpha through npx to harvest tweets from a specific Twitter/X user, distill their trading views, and forge a brand new KOL Skill. Use when the user wants to turn @username into a reusable skill, refresh that skill from fresh tweets, and install the generated skill globally for Codex, Claude Code, or other agents via a portable bundle.
 ---
 
 # CopyAlpha KOL Factory
 
 Use this skill when the user wants to:
-- install a Codex skill through `npx copyalpha install-skill`
+- install a reusable KOL-harvesting skill for multiple agent runtimes
 - harvest tweets from a specific Twitter/X account
 - distill that account into a new skill under `generated-skills/kol-<username>`
-- refresh or rebuild an existing KOL skill from newer tweets
+- install the generated skill globally for Codex, Claude Code, and a generic portable bundle
 
 ## Required inputs
 
@@ -25,12 +25,19 @@ Use this skill when the user wants to:
 2. Otherwise run `scripts/bootstrap_copyalpha.sh <workspace_dir>`.
 3. Make sure `<workspace_dir>/.env` contains the required keys before harvesting.
 4. Run `scripts/materialize_kol.sh <workspace_dir> @username [history_depth]`.
-5. Report the generated files in `generated-skills/kol-<username>/`.
+5. Report both the generated bundle in `generated-skills/kol-<username>/` and the global install paths.
 
 ## Bundled scripts
 
 - `scripts/bootstrap_copyalpha.sh`: creates a CopyAlpha workspace through `npx copyalpha@latest init`, prepares `.env`, and creates the `generated-skills` directory.
-- `scripts/materialize_kol.sh`: runs `npx copyalpha@latest forge materialize` for one username.
+- `scripts/materialize_kol.sh`: runs `npx copyalpha@latest forge materialize --install` so the generated skill is also installed globally.
+
+## Global install targets
+
+By default the generated KOL skill is installed to:
+- `~/.agent-skills/kol-<username>/` as a portable bundle for generic agents
+- `~/.codex/skills/kol-<username>/` for Codex/OpenAI-style agents
+- `~/.claude/agents/kol-<username>.md` for Claude Code
 
 ## Behavior notes
 
