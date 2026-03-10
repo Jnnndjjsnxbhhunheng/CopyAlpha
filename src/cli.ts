@@ -34,6 +34,7 @@ import {
   type AgentInstallResult,
 } from "./forge";
 import { config } from "./shared/config";
+import { findGeneratedSkillBundle } from "./shared/generated-skills";
 import {
   analyze,
   askKOL,
@@ -155,7 +156,8 @@ forgeCmd
   .action(async (username: string) => {
     const normalized = normalizeUsername(username);
     const result = await forgeKOL(normalized);
-    console.log(`\nSkill generated at: ${result.skillDir}`);
+    console.log(`\nSkill name: ${result.skillName}`);
+    console.log(`Skill generated at: ${result.skillDir}`);
     console.log(`Quality score: ${result.quality.score}/100`);
     if (result.quality.issues.length > 0) {
       console.log(`Issues: ${result.quality.issues.join("; ")}`);
@@ -182,6 +184,7 @@ forgeCmd
 
     console.log(`\nMaterialized @${result.username} into a new skill.`);
     console.log(`Tweets scraped: ${result.scrapedCount}`);
+    console.log(`Skill name: ${result.forgeResult.skillName}`);
     console.log(`Skill generated at: ${result.forgeResult.skillDir}`);
     console.log(`Quality score: ${result.forgeResult.quality.score}/100`);
 
@@ -470,17 +473,17 @@ function installGeneratedSkill(
   options: GlobalInstallCliOptions
 ): InstallSkillResult {
   const normalized = normalizeUsername(username);
-  const sourceDir = resolveGeneratedSkillDir(normalized);
+  const generated = resolveGeneratedSkillBundle(normalized);
   const installResults = installAgentSkillBundle(
-    sourceDir,
+    generated.skillDir,
     {
       ...toAgentInstallOptions(options, options.force),
-      installedName: `kol-${normalized}`,
+      installedName: generated.skillName,
     }
   );
 
   return {
-    sourceDir,
+    sourceDir: generated.skillDir,
     installResults,
   };
 }
@@ -497,10 +500,10 @@ async function materializeKOL(
   const forgeResult = await forgeKOL(normalized);
 
   const installResults = options.install
-    ? installGeneratedSkill(normalized, {
-        ...options,
-        force: options.forceInstall,
-      }).installResults
+    ? installAgentSkillBundle(forgeResult.skillDir, {
+        ...toAgentInstallOptions(options, options.forceInstall),
+        installedName: forgeResult.skillName,
+      })
     : [];
 
   return {
@@ -540,14 +543,14 @@ function resolveBundledSkillDir(skillName: string): string {
   throw new Error(`Unable to locate bundled skill: ${skillName}`);
 }
 
-function resolveGeneratedSkillDir(username: string): string {
-  const skillDir = path.join(config.paths.generatedSkills, `kol-${username}`);
-  if (!fs.existsSync(path.join(skillDir, "SKILL.md"))) {
+function resolveGeneratedSkillBundle(username: string): { skillDir: string; skillName: string } {
+  const bundle = findGeneratedSkillBundle(config.paths.generatedSkills, username);
+  if (!bundle || !fs.existsSync(path.join(bundle.skillDir, "SKILL.md"))) {
     throw new Error(
       `Generated skill for @${username} not found. Run: copyalpha forge materialize @${username}`
     );
   }
-  return skillDir;
+  return { skillDir: bundle.skillDir, skillName: bundle.skillName };
 }
 
 function resolveEnvExamplePath(): string {

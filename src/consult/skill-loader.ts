@@ -9,6 +9,7 @@
 import fs from "fs";
 import path from "path";
 import { config } from "../shared/config";
+import { dedupeGeneratedSkillBundles, findGeneratedSkillBundle, listGeneratedSkillBundles } from "../shared/generated-skills";
 import type { KOLProfile, KOLKnowledge } from "../types";
 
 export interface LoadedSkill {
@@ -18,27 +19,21 @@ export interface LoadedSkill {
 }
 
 export function loadAllSkills(): LoadedSkill[] {
-  const skillsDir = config.paths.generatedSkills;
-  if (!fs.existsSync(skillsDir)) return [];
-
-  const dirs = fs
-    .readdirSync(skillsDir)
-    .filter((d) => d.startsWith("kol-"));
+  const bundles = dedupeGeneratedSkillBundles(
+    listGeneratedSkillBundles(config.paths.generatedSkills)
+  );
 
   const skills: LoadedSkill[] = [];
-  for (const dir of dirs) {
-    const skill = loadSkillFromDir(path.join(skillsDir, dir));
+  for (const bundle of bundles) {
+    const skill = loadSkillFromDir(bundle.skillDir);
     if (skill) skills.push(skill);
   }
   return skills;
 }
 
 export function loadSkill(username: string): LoadedSkill | null {
-  const dir = path.join(
-    config.paths.generatedSkills,
-    `kol-${username}`
-  );
-  return loadSkillFromDir(dir);
+  const bundle = findGeneratedSkillBundle(config.paths.generatedSkills, username);
+  return bundle ? loadSkillFromDir(bundle.skillDir) : null;
 }
 
 function loadSkillFromDir(dir: string): LoadedSkill | null {

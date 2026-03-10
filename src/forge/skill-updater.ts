@@ -9,6 +9,7 @@
 import fs from "fs";
 import path from "path";
 import { config } from "../shared/config";
+import { findGeneratedSkillBundle } from "../shared/generated-skills";
 import { getSignalsByAuthor, getTweetsByAuthor } from "../storage/db";
 import { extractSignals } from "../distill/signal-extractor";
 import { buildProfile } from "../distill/profile-builder";
@@ -29,14 +30,16 @@ export interface UpdateDecision {
 export function decideUpdateStrategy(
   username: string
 ): UpdateDecision {
-  const skillDir = path.join(
+  const existingBundle = findGeneratedSkillBundle(
     config.paths.generatedSkills,
-    `kol-${username}`
+    username
   );
-  const profilePath = path.join(skillDir, "profile.json");
+  const profilePath = existingBundle
+    ? path.join(existingBundle.skillDir, "profile.json")
+    : "";
 
   // No existing skill → full rebuild
-  if (!fs.existsSync(profilePath)) {
+  if (!existingBundle || !fs.existsSync(profilePath)) {
     return {
       shouldFullRebuild: true,
       shouldIncremental: false,
@@ -128,6 +131,6 @@ export async function incrementalUpdate(
   }
 
   // Regenerate skill files
-  const skillDir = await generateSkill(profile, knowledge);
-  return skillDir;
+  const generated = await generateSkill(profile, knowledge);
+  return generated.skillDir;
 }

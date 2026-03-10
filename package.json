@@ -13,7 +13,9 @@
     ".env.example",
     "src/forge/templates/skill-md.hbs",
     "src/storage/schema.sql",
-    "README.md"
+    "README.md",
+    "README.zh-CN.md",
+    "README.en.md"
   ],
   "scripts": {
     "build": "tsc",

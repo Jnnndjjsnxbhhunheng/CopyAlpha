@@ -11,6 +11,7 @@ import path from "path";
 import Handlebars from "handlebars";
 import { generate } from "../shared/llm";
 import { config } from "../shared/config";
+import { resolveGeneratedSkillOutput } from "../shared/generated-skills";
 import { getSignalsByAuthor } from "../storage/db";
 import type {
   KOLProfile,
@@ -56,12 +57,13 @@ const compiledTemplate = Handlebars.compile(SKILL_MD_TEMPLATE);
 export async function generateSkill(
   profile: KOLProfile,
   knowledge: KOLKnowledge
-): Promise<string> {
+): Promise<{ skillDir: string; skillName: string }> {
   const username = profile.username;
-  const skillDir = path.join(
+  const resolved = resolveGeneratedSkillOutput(
     config.paths.generatedSkills,
-    `kol-${username}`
+    username
   );
+  const skillDir = resolved.skillDir;
 
   fs.mkdirSync(skillDir, { recursive: true });
   fs.mkdirSync(path.join(skillDir, "agents"), { recursive: true });
@@ -71,7 +73,8 @@ export async function generateSkill(
   const skillMd = await generateSkillMd(
     profile,
     knowledge,
-    signals
+    signals,
+    resolved.skillName
   );
   fs.writeFileSync(path.join(skillDir, "SKILL.md"), skillMd, "utf-8");
 
@@ -106,30 +109,32 @@ export async function generateSkill(
 
   fs.writeFileSync(
     path.join(skillDir, "agents", "openai.yaml"),
-    buildOpenAiAgentMetadata(profile),
+    buildOpenAiAgentMetadata(profile, resolved.skillName),
     "utf-8"
   );
 
   fs.writeFileSync(
     path.join(skillDir, "claude-agent.md"),
-    buildClaudeAgent(profile, knowledge),
+    buildClaudeAgent(profile, knowledge, resolved.skillName),
     "utf-8"
   );
 
-  console.log(`[Forge] Generated Skill at ${skillDir}`);
-  return skillDir;
+  console.log(`[Forge] Generated Skill ${resolved.skillName} at ${skillDir}`);
+  return { skillDir, skillName: resolved.skillName };
 }
 
 async function generateSkillMd(
   profile: KOLProfile,
   knowledge: KOLKnowledge,
-  signals: TradingSignal[]
+  signals: TradingSignal[],
+  skillName: string
 ): Promise<string> {
   const tokenOpinionsList = summarizeTokenOpinions(knowledge);
 
   const whenToUse = buildWhenToUse(profile, knowledge);
 
   const data = {
+    skill_name: skillName,
     username: profile.username,
     trading_style: true,
     preferred_sectors: profile.trading_style.preferred_sectors,
@@ -222,10 +227,10 @@ KOL: @${profile.username}
   }
 }
 
-function buildOpenAiAgentMetadata(profile: KOLProfile): string {
+function buildOpenAiAgentMetadata(profile: KOLProfile, skillName: string): string {
   const displayName = `@${profile.username} Trading Skill`;
   const shortDescription = `提炼 @${profile.username} 的交易风格与 token 观点`;
-  const defaultPrompt = `Use $kol-${profile.username} to analyze a token with @${profile.username}'s historical trading style.`;
+  const defaultPrompt = `Use $${skillName} to analyze a token with @${profile.username}'s historical trading style.`;
 
   return [
     "interface:",
@@ -241,7 +246,8 @@ function buildOpenAiAgentMetadata(profile: KOLProfile): string {
 
 function buildClaudeAgent(
   profile: KOLProfile,
-  knowledge: KOLKnowledge
+  knowledge: KOLKnowledge,
+  skillName: string
 ): string {
   const tokenOpinions = summarizeTokenOpinions(knowledge)
     .map((entry) => formatTokenOpinion(entry.symbol, entry))
@@ -260,7 +266,7 @@ function buildClaudeAgent(
 
   return [
     "---",
-    `name: kol-${profile.username}`,
+    `name: ${skillName}`,
     `description: Use proactively when the user wants @${profile.username}'s historical crypto trading style, token views, or recurring market patterns.`,
     "tools: Read, Grep, Glob",
     "---",

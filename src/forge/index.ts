@@ -15,6 +15,7 @@ export type { AgentInstallTarget, AgentInstallOptions, AgentInstallResult } from
 
 export interface ForgeResult {
   skillDir: string;
+  skillName: string;
   quality: QualityReport;
 }
 
@@ -43,7 +44,7 @@ export async function forgeKOL(
   }
 
   // Generate skill files
-  const skillDir = await generateSkill(
+  const generated = await generateSkill(
     distilled.profile,
     distilled.knowledge
   );
@@ -52,5 +53,5 @@ export async function forgeKOL(
     `[Forge] Complete for @${username} (quality: ${quality.score}/100)`
   );
 
-  return { skillDir, quality };
+  return { skillDir: generated.skillDir, skillName: generated.skillName, quality };
 }
