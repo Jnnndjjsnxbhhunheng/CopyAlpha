@@ -3,32 +3,49 @@
 > 把 Twitter / X 上的 KOL，沉淀成可复用、可全局安装的 Agent Skill
 
 CopyAlpha 是一个 **KOL Skill 工厂**。
-它会抓取指定 KOL 的历史推文，提炼交易风格、叙事判断、Token 观点和重复模式，然后生成一个新的 **KOL Skill**，并可自动安装给不同 agent 使用。
+它会抓取指定 KOL 的历史推文，提炼交易风格、叙事判断、Token 观点和重复模式，然后生成新的 `kol-{username}` Skill，并把它安装到不同 agent 可读取的位置。
 
-它不是跟单机器人，也不是一次性摘要工具。
+这不是跟单机器人，也不是一次性摘要工具。
 它更像一个“专家知识压缩器”——把某个 KOL 过去公开表达过的交易思路，整理成一个可以长期复用的技能包。
 
-## 这项目现在能做什么
+## TL;DR
 
-- 抓取指定 Twitter / X 用户的历史推文
-- 用 LLM 提炼交易信号、交易画像、宏观看法、重复模式
-- 生成新的 `kol-{username}` Skill
-- 自动安装到多种 agent 运行环境
-  - 通用 portable bundle
-  - Codex / OpenAI 风格 Skill
-  - Claude Code subagent
+如果你是最终用户，主流程只有 3 步：
+
+```bash
+npx copyalpha@latest install-skill
+```
+
+重启你的 agent 工具，然后对它说：
+
+```text
+Use $copyalpha-kol-factory to harvest @inversebrah and forge a new KOL skill.
+```
+
+填好 `.env` 里的 API Key 之后，CopyAlpha 会：
+
+- 抓取这个 KOL 的历史推文
+- 蒸馏出交易风格、叙事、Token 观点和模式
+- 生成新的 `kol-inversebrah` Skill
+- 自动安装到全局目录，供不同 agent 使用
+
+---
 
 ## 用户全程使用流程
 
-### 1. 安装“工厂 Skill”
+### 1) 安装“工厂 Skill”
 
 推荐流程是：先安装一个通用的工厂 Skill，后续都通过它来生产新的 KOL Skill。
 
-```bash
-# npm 发布后推荐
-npx copyalpha@latest install-skill
+**推荐：npm 发布后使用**
 
-# 如果还没发布到 npm，可临时从 GitHub 直接运行
+```bash
+npx copyalpha@latest install-skill
+```
+
+**如果还没发布到 npm，可临时从 GitHub 直接运行**
+
+```bash
 npx github:Jnnndjjsnxbhhunheng/CopyAlpha install-skill
 ```
 
@@ -38,7 +55,7 @@ npx github:Jnnndjjsnxbhhunheng/CopyAlpha install-skill
 - Codex / OpenAI 风格：`~/.codex/skills/copyalpha-kol-factory/`
 - Claude Code：`~/.claude/agents/copyalpha-kol-factory.md`
 
-### 2. 重启你的 agent 工具
+### 2) 重启你的 agent 工具
 
 安装完成后，重启你正在使用的 agent 工具，例如：
 
@@ -46,7 +63,7 @@ npx github:Jnnndjjsnxbhhunheng/CopyAlpha install-skill
 - Codex
 - 其他支持读取本地 skill / subagent 的 agent
 
-### 3. 在 agent 中调用工厂 Skill
+### 3) 在 agent 中调用工厂 Skill
 
 直接对 agent 说：
 
@@ -60,16 +77,16 @@ Use $copyalpha-kol-factory to harvest @inversebrah and forge a new KOL skill.
 用 copyalpha-kol-factory 抓取 @inversebrah 的推文，并生成一个新的 KOL Skill。
 ```
 
-### 4. 填写工作区配置
+### 4) 填写工作区配置
 
 工厂 Skill 会先初始化一个本地工作区，然后要求你填写 `.env`。
 
-必填：
+**必填**
 
 - `TWITTER_BEARER_TOKEN`
 - `ANTHROPIC_API_KEY`
 
-可选：
+**可选**
 
 - `NITTER_INSTANCES`
 - `OKX_API_KEY`
@@ -78,7 +95,7 @@ Use $copyalpha-kol-factory to harvest @inversebrah and forge a new KOL skill.
 - `WALLET_ADDRESS`
 - `LLM_MODEL`
 
-### 5. 工厂 Skill 自动完成采集、蒸馏、安装
+### 5) 工厂 Skill 自动完成采集、蒸馏、安装
 
 底层等价于执行：
 
@@ -96,7 +113,7 @@ npx copyalpha@latest forge materialize @inversebrah --install --targets bundle,c
 - 生成新的 `kol-{username}` Skill
 - 把这个新 Skill 安装到全局 agent 目录
 
-### 6. 之后直接使用新生成的 KOL Skill
+### 6) 之后直接使用新生成的 KOL Skill
 
 生成并安装完成后，你就可以在 agent 里继续用这个新 Skill：
 
@@ -108,21 +125,6 @@ Use $kol-inversebrah to analyze SOL.
 
 ```text
 参考 @inversebrah 的历史交易风格，帮我看一下 PEPE。
-```
-
-## 生成结果长什么样
-
-每个 KOL 最终会产出一个独立技能包：
-
-```text
-generated-skills/kol-inversebrah/
-├── SKILL.md              # 通用 Skill 入口 / portable bundle 说明
-├── claude-agent.md       # Claude Code subagent 适配文件
-├── agents/openai.yaml    # Codex / OpenAI 风格元数据
-├── profile.json          # KOL 画像
-├── knowledge.json        # Token 观点 / 宏观判断 / 叙事
-├── signals-history.json  # 提取出的历史信号
-└── style-guide.json      # 分析风格指南
 ```
 
 ## 新 Skill 会安装到哪里
@@ -141,6 +143,27 @@ generated-skills/kol-inversebrah/
 npx copyalpha@latest forge materialize @inversebrah --install --targets claude
 npx copyalpha@latest forge materialize @inversebrah --install --targets bundle,codex
 ```
+
+## 生成结果长什么样
+
+每个 KOL 最终会产出一个独立技能包：
+
+```text
+generated-skills/kol-inversebrah/
+├── SKILL.md              # 通用 Skill 入口 / portable bundle 说明
+├── claude-agent.md       # Claude Code subagent 适配文件
+├── agents/openai.yaml    # Codex / OpenAI 风格元数据
+├── profile.json          # KOL 画像
+├── knowledge.json        # Token 观点 / 宏观判断 / 叙事
+├── signals-history.json  # 提取出的历史信号
+└── style-guide.json      # 分析风格指南
+```
+
+这里面最重要的是：
+
+- `SKILL.md`：通用 bundle 入口
+- `claude-agent.md`：给 Claude Code 的适配层
+- `agents/openai.yaml`：给 Codex / OpenAI 风格环境的元数据
 
 ## 命令行直接使用
 
@@ -241,6 +264,15 @@ KOL Skill Bundle
 | `Forge` | 生成 KOL Skill 文件，并安装到不同 agent 目标 |
 | `Consult` | 加载 KOL Skills，结合链上数据输出综合分析 |
 
+## 适用场景
+
+适合以下需求：
+
+- 你想把某个 KOL 的历史观点整理成一个长期可复用的 agent skill
+- 你希望同一个 KOL Skill 同时给 Claude Code、Codex、其他 agent 使用
+- 你想做“多 KOL 共识分析”，而不是手工翻历史推文
+- 你想把 KOL 的判断模式沉淀成结构化知识，而不是一次性总结
+
 ## 本地开发
 
 ```bash
@@ -255,15 +287,6 @@ npm test
 npx jest tests/agent-skill-installer.test.ts --runInBand
 npx tsc --noEmit
 ```
-
-## 适用场景
-
-适合以下需求：
-
-- 你想把某个 KOL 的历史观点整理成一个长期可复用的 agent skill
-- 你希望同一个 KOL Skill 同时给 Claude Code、Codex、其他 agent 使用
-- 你想做“多 KOL 共识分析”，而不是手工翻历史推文
-- 你想把 KOL 的判断模式沉淀成结构化知识，而不是一次性总结
 
 ## 注意事项
 
