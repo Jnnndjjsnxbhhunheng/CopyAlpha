@@ -3,17 +3,24 @@ import path from "path";
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
-function required(key: string): string {
-  const val = process.env[key];
-  if (!val) {
-    throw new Error(`Missing required env var: ${key}`);
-  }
-  return val;
-}
-
 function optional(key: string, fallback: string): string {
   return process.env[key] ?? fallback;
 }
+
+function optionalInt(key: string, fallback: number): number {
+  const raw = process.env[key];
+  if (!raw) {
+    return fallback;
+  }
+
+  const parsed = parseInt(raw, 10);
+  if (Number.isNaN(parsed)) {
+    throw new Error(`Invalid integer env var: ${key}`);
+  }
+  return parsed;
+}
+
+export type LLMProvider = "openclaw" | "openai-compatible";
 
 export const config = {
   twitter: {
@@ -23,9 +30,22 @@ export const config = {
       .filter(Boolean),
   },
 
-  anthropic: {
-    apiKey: optional("ANTHROPIC_API_KEY", ""),
-    model: optional("LLM_MODEL", "claude-sonnet-4-20250514"),
+  llm: {
+    provider: optional("LLM_PROVIDER", "openclaw") as LLMProvider,
+    model: optional("LLM_MODEL", "openclaw"),
+    baseUrl: optional(
+      "LLM_BASE_URL",
+      optional("OPENCLAW_GATEWAY_BASE_URL", "http://127.0.0.1:18789/v1")
+    ),
+    apiKey: optional(
+      "LLM_API_KEY",
+      optional(
+        "OPENCLAW_GATEWAY_TOKEN",
+        optional("OPENCLAW_GATEWAY_PASSWORD", "")
+      )
+    ),
+    openclawAgentId: optional("OPENCLAW_AGENT_ID", "main"),
+    timeoutMs: optionalInt("LLM_TIMEOUT_MS", 120000),
   },
 
   okx: {
@@ -36,9 +56,9 @@ export const config = {
   },
 
   harvest: {
-    intervalSeconds: parseInt(optional("HARVEST_INTERVAL_SECONDS", "60"), 10),
-    historyDepth: parseInt(optional("HARVEST_HISTORY_DEPTH", "500"), 10),
-    maxConcurrent: parseInt(optional("HARVEST_MAX_CONCURRENT", "3"), 10),
+    intervalSeconds: optionalInt("HARVEST_INTERVAL_SECONDS", 60),
+    historyDepth: optionalInt("HARVEST_HISTORY_DEPTH", 500),
+    maxConcurrent: optionalInt("HARVEST_MAX_CONCURRENT", 3),
   },
 
   paths: {

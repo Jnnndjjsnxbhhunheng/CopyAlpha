@@ -2,12 +2,13 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 
-export type AgentInstallTarget = "bundle" | "codex" | "claude";
+export type AgentInstallTarget = "bundle" | "openclaw" | "codex" | "claude";
 
 export interface AgentInstallOptions {
   targets: AgentInstallTarget[];
   force?: boolean;
   bundleHome?: string;
+  openclawHome?: string;
   codexHome?: string;
   claudeHome?: string;
   installedName?: string;
@@ -33,32 +34,30 @@ export function installAgentSkillBundle(
       case "bundle": {
         const destPath = path.join(resolveBundleHome(options), skillName);
         installDirectory(sourceDir, destPath, !!options.force);
-        results.push({
-          target,
-          sourcePath: sourceDir,
-          destPath,
-        });
+        results.push({ target, sourcePath: sourceDir, destPath });
+        break;
+      }
+      case "openclaw": {
+        const destPath = path.join(
+          resolveOpenclawHome(options),
+          "skills",
+          skillName
+        );
+        installDirectory(sourceDir, destPath, !!options.force);
+        results.push({ target, sourcePath: sourceDir, destPath });
         break;
       }
       case "codex": {
         const destPath = path.join(resolveCodexHome(options), "skills", skillName);
         installDirectory(sourceDir, destPath, !!options.force);
-        results.push({
-          target,
-          sourcePath: sourceDir,
-          destPath,
-        });
+        results.push({ target, sourcePath: sourceDir, destPath });
         break;
       }
       case "claude": {
         const sourcePath = resolveClaudeAdapterPath(sourceDir);
         const destPath = path.join(resolveClaudeHome(options), "agents", `${skillName}.md`);
         installFile(sourcePath, destPath, !!options.force);
-        results.push({
-          target,
-          sourcePath,
-          destPath,
-        });
+        results.push({ target, sourcePath, destPath });
         break;
       }
       default:
@@ -70,7 +69,7 @@ export function installAgentSkillBundle(
 }
 
 export function parseInstallTargets(value?: string): AgentInstallTarget[] {
-  const rawTargets = (value ?? "bundle,codex,claude")
+  const rawTargets = (value ?? "openclaw,codex,claude,bundle")
     .split(",")
     .map((item) => item.trim().toLowerCase())
     .filter(Boolean);
@@ -83,7 +82,7 @@ export function parseInstallTargets(value?: string): AgentInstallTarget[] {
   for (const target of rawTargets) {
     if (!isInstallTarget(target)) {
       throw new Error(
-        `Unsupported install target: ${target}. Use bundle, codex, or claude.`
+        `Unsupported install target: ${target}. Use openclaw, codex, claude, or bundle.`
       );
     }
     seen.add(target);
@@ -100,6 +99,10 @@ function validateSkillBundle(sourceDir: string): void {
 
 function resolveBundleHome(options: AgentInstallOptions): string {
   return options.bundleHome ?? process.env.AGENT_SKILLS_HOME ?? path.join(os.homedir(), ".agent-skills");
+}
+
+function resolveOpenclawHome(options: AgentInstallOptions): string {
+  return options.openclawHome ?? process.env.OPENCLAW_HOME ?? path.join(os.homedir(), ".openclaw");
 }
 
 function resolveCodexHome(options: AgentInstallOptions): string {
@@ -167,7 +170,12 @@ function copyDirectory(sourceDir: string, destDir: string): void {
 }
 
 function isInstallTarget(value: string): value is AgentInstallTarget {
-  return value === "bundle" || value === "codex" || value === "claude";
+  return (
+    value === "bundle" ||
+    value === "openclaw" ||
+    value === "codex" ||
+    value === "claude"
+  );
 }
 
 function assertNever(value: never): never {

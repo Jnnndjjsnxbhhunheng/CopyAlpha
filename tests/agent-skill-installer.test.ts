@@ -10,6 +10,7 @@ describe("agent-skill-installer", () => {
   const tmpRoot = path.join(os.tmpdir(), `copyalpha-agent-installer-${Date.now()}`);
   const sourceDir = path.join(tmpRoot, "kol-demo");
   const bundleHome = path.join(tmpRoot, "bundle-home");
+  const openclawHome = path.join(tmpRoot, "openclaw-home");
   const codexHome = path.join(tmpRoot, "codex-home");
   const claudeHome = path.join(tmpRoot, "claude-home");
 
@@ -26,7 +27,8 @@ describe("agent-skill-installer", () => {
   });
 
   it("parses install targets", () => {
-    expect(parseInstallTargets("bundle,claude,codex")).toEqual([
+    expect(parseInstallTargets("openclaw,bundle,claude,codex")).toEqual([
+      "openclaw",
       "bundle",
       "claude",
       "codex",
@@ -35,15 +37,17 @@ describe("agent-skill-installer", () => {
 
   it("installs bundle for all supported runtimes", () => {
     const results = installAgentSkillBundle(sourceDir, {
-      targets: ["bundle", "codex", "claude"],
+      targets: ["openclaw", "bundle", "codex", "claude"],
       force: true,
       bundleHome,
+      openclawHome,
       codexHome,
       claudeHome,
       installedName: "kol-demo",
     });
 
-    expect(results).toHaveLength(3);
+    expect(results).toHaveLength(4);
+    expect(fs.existsSync(path.join(openclawHome, "skills", "kol-demo", "SKILL.md"))).toBe(true);
     expect(fs.existsSync(path.join(bundleHome, "kol-demo", "SKILL.md"))).toBe(true);
     expect(fs.existsSync(path.join(codexHome, "skills", "kol-demo", "SKILL.md"))).toBe(true);
     expect(fs.existsSync(path.join(claudeHome, "agents", "kol-demo.md"))).toBe(true);

@@ -1,7 +1,7 @@
 {
   "name": "copyalpha",
   "version": "2.0.0",
-  "description": "把 KOL 变成你的私人 Skill，让 AI 替你抄最聪明的作业",
+  "description": "OpenClaw-first 的 KOL Skill 工厂：采集 Twitter/X 用户，沉淀为可安装的通用 Agent Skill",
   "main": "dist/index.js",
   "bin": {
     "copyalpha": "dist/cli.js"
@@ -31,13 +31,16 @@
     "kol",
     "trading",
     "ai-skill",
+    "agent-skill",
+    "openclaw",
+    "claude-code",
+    "twitter",
     "onchainos",
     "crypto"
   ],
   "author": "Snopp",
   "license": "Apache-2.0",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0",
     "better-sqlite3": "^11.7.0",
     "cheerio": "^1.0.0",
     "commander": "^13.1.0",

@@ -68,11 +68,12 @@ program
 
 program
   .command("install-skill")
-  .description("Install the bundled factory skill for Codex, Claude Code, and a generic agent bundle")
+  .description("Install the bundled factory skill for OpenClaw, Codex, Claude Code, and a generic agent bundle")
   .option("-n, --name <name>", "Bundled skill directory name", "copyalpha-kol-factory")
-  .option("-t, --targets <targets>", "Comma-separated install targets: bundle,codex,claude", "bundle,codex,claude")
+  .option("-t, --targets <targets>", "Comma-separated install targets: openclaw,codex,claude,bundle", "openclaw,codex,claude,bundle")
   .option("-f, --force", "Overwrite existing installed targets")
   .option("--bundle-home <dir>", "Override generic bundle home")
+  .option("--openclaw-home <dir>", "Override OpenClaw home")
   .option("--codex-home <dir>", "Override Codex home")
   .option("--claude-home <dir>", "Override Claude home")
   .action((options: RootInstallSkillOptions) => {
@@ -169,9 +170,10 @@ forgeCmd
   .description("Track, harvest, forge, and optionally install a brand new KOL Skill")
   .option("-c, --count <count>", "Historical tweet count to scrape")
   .option("--install", "Install the generated skill into global agent locations")
-  .option("-t, --targets <targets>", "Comma-separated install targets: bundle,codex,claude", "bundle,codex,claude")
+  .option("-t, --targets <targets>", "Comma-separated install targets: openclaw,codex,claude,bundle", "openclaw,codex,claude,bundle")
   .option("--force-install", "Overwrite existing installed skill targets")
   .option("--bundle-home <dir>", "Override generic bundle home")
+  .option("--openclaw-home <dir>", "Override OpenClaw home")
   .option("--codex-home <dir>", "Override Codex home")
   .option("--claude-home <dir>", "Override Claude home")
   .action(async (username: string, options: MaterializeCliOptions) => {
@@ -197,9 +199,10 @@ forgeCmd
 forgeCmd
   .command("install <username>")
   .description("Install an existing generated KOL skill into global agent locations")
-  .option("-t, --targets <targets>", "Comma-separated install targets: bundle,codex,claude", "bundle,codex,claude")
+  .option("-t, --targets <targets>", "Comma-separated install targets: openclaw,codex,claude,bundle", "openclaw,codex,claude,bundle")
   .option("-f, --force", "Overwrite existing installed skill targets")
   .option("--bundle-home <dir>", "Override generic bundle home")
+  .option("--openclaw-home <dir>", "Override OpenClaw home")
   .option("--codex-home <dir>", "Override Codex home")
   .option("--claude-home <dir>", "Override Claude home")
   .action((username: string, options: GlobalInstallCliOptions) => {
@@ -399,6 +402,7 @@ interface GlobalInstallCliOptions {
   targets?: string;
   force?: boolean;
   bundleHome?: string;
+  openclawHome?: string;
   codexHome?: string;
   claudeHome?: string;
 }
@@ -515,6 +519,7 @@ function toAgentInstallOptions(
     targets: parseInstallTargets(options.targets),
     force,
     bundleHome: options.bundleHome,
+    openclawHome: options.openclawHome,
     codexHome: options.codexHome,
     claudeHome: options.claudeHome,
   };
