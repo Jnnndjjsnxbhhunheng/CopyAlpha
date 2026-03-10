@@ -33,6 +33,39 @@ Use $copyalpha-kol-factory to harvest @inversebrah and forge a new KOL skill.
 
 ---
 
+## 安装方式
+
+### 正式发布版（推荐）
+
+```bash
+npx copyalpha@latest install-skill
+```
+
+适合大多数最终用户：
+
+- 直接从 npm 拉取已构建好的 CLI
+- 不依赖本地仓库副本
+- 安装后即可把工厂 Skill 写入 `OpenClaw` / `Codex` / `Claude Code` / 通用 bundle 目录
+
+### GitHub 回退安装
+
+```bash
+npx github:Jnnndjjsnxbhhunheng/CopyAlpha install-skill
+```
+
+适合 npm 还没发布、或你想先试主分支版本时使用。
+
+### 本地开发安装
+
+```bash
+npm install
+npm run build
+npm link
+copyalpha install-skill
+```
+
+适合本地调试 CLI 和 Skill 模板。
+
 ## 安装与使用流程（最终用户）
 
 ### 1) 安装“工厂 Skill”
@@ -313,6 +346,26 @@ KOL Skill Bundle
 - 你希望同一个 KOL Skill 同时给 OpenClaw、Claude Code、Codex、其他 agent 使用
 - 你想做“多 KOL 共识分析”，而不是手工翻历史推文
 - 你想把 KOL 的判断模式沉淀成结构化知识，而不是一次性总结
+
+## 发布检查（维护者）
+
+正式发布到 npm 前，建议按这个顺序检查：
+
+```bash
+npm install
+npm run build
+npm test
+npm run pack:check
+```
+
+然后再发布：
+
+```bash
+npm version patch
+npm publish
+```
+
+如果你只是想先确认最终用户会拿到哪些文件，`npm run pack:check` 就够了。
 
 ## 本地开发
 
