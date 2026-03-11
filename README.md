@@ -141,6 +141,20 @@ Use $copyalpha-kol-factory to harvest @inversebrah and forge a new KOL skill.
 
 - `SOCIALDATA_API_KEY` — 从 [socialdata.tools](https://socialdata.tools) 获取
 
+**常用 OpenClaw 配置**
+
+- `LLM_PROVIDER=openclaw`
+- `OPENCLAW_GATEWAY_BASE_URL=http://127.0.0.1:18789/v1`
+- `OPENCLAW_AGENT_ID=main`
+- `OPENCLAW_GATEWAY_TOKEN` 或 `OPENCLAW_GATEWAY_PASSWORD`（仅在网关开启认证时需要）
+- 确认 OpenClaw Gateway 已启用 `chatCompletions` 端点：`gateway.http.endpoints.chatCompletions.enabled = true`
+
+**OpenAI-compatible 模式（可选）**
+
+- `LLM_PROVIDER=openai-compatible`
+- `LLM_BASE_URL=https://your-llm-gateway/v1`
+- `LLM_API_KEY=your-api-key`
+
 ### 5) 工厂 Skill 自动完成采集、蒸馏、安装
 
 底层等价于执行：
@@ -243,14 +257,39 @@ copyalpha consult leaderboard
 | 变量 | 必需 | 说明 |
 |---|---|---|
 | `SOCIALDATA_API_KEY` | 是 | SocialData API Key（从 [socialdata.tools](https://socialdata.tools) 获取） |
-| `OKX_API_KEY` | 是 | OKX OnchainOS API Key（链上查询用） |
-| `OKX_SECRET_KEY` | 是 | OKX Secret Key |
-| `OKX_PASSPHRASE` | 是 | OKX Passphrase |
+| `LLM_PROVIDER` | 否 | 默认 `openclaw`，也可切到 `openai-compatible` |
+| `LLM_MODEL` | 否 | 默认 `openclaw` |
+| `OPENCLAW_GATEWAY_BASE_URL` | 否 | OpenClaw 模式的网关地址，默认 `http://127.0.0.1:18789/v1` |
+| `OPENCLAW_AGENT_ID` | 否 | 默认 `main`，作为 OpenClaw 目标 agent ID |
+| `OPENCLAW_GATEWAY_TOKEN` | 否 | OpenClaw Gateway 令牌认证 |
+| `OPENCLAW_GATEWAY_PASSWORD` | 否 | OpenClaw Gateway 密码认证 |
+| `LLM_BASE_URL` | 否 | OpenAI-compatible 模式的接口地址；也可覆盖默认 OpenClaw 地址 |
+| `LLM_API_KEY` | 否 | OpenAI-compatible 模式的接口认证；也可作为网关 Bearer Token 覆盖项 |
+| `LLM_TIMEOUT_MS` | 否 | LLM 请求超时，默认 `120000` |
+| `LLM_MAX_RETRIES` | 否 | 可恢复 LLM 错误的最大重试次数，默认 `4` |
+| `LLM_RETRY_BASE_DELAY_MS` | 否 | 首次重试等待时间，默认 `1500` |
+| `LLM_RETRY_MAX_DELAY_MS` | 否 | 重试退避最大等待时间，默认 `15000` |
+| `OKX_API_KEY` | 否 | OKX OnchainOS API Key（链上查询用） |
+| `OKX_SECRET_KEY` | 否 | OKX Secret Key |
+| `OKX_PASSPHRASE` | 否 | OKX Passphrase |
 | `HARVEST_INTERVAL_SECONDS` | 否 | 增量监控轮询间隔 |
 | `HARVEST_HISTORY_DEPTH` | 否 | 默认历史抓取深度 |
 | `HARVEST_MAX_CONCURRENT` | 否 | 最大并发抓取数 |
 
-LLM 调用由本地 OpenClaw Gateway（`http://127.0.0.1:18789/v1`）自动处理，无需额外配置。
+## OpenClaw-first LLM 模式
+
+当前版本已经从“模型 SDK 直连”改成了 **OpenClaw-first 的 OpenAI-compatible 调用**：
+
+- 默认向 OpenClaw Gateway 发起 `/v1/chat/completions` 请求
+- 如果配置了认证，会自动携带 `Authorization: Bearer ...`
+- 默认通过 `x-openclaw-agent-id` 指定 OpenClaw 里的 agent
+- 如果你不走 OpenClaw，也可以把 `LLM_PROVIDER` 切成 `openai-compatible`，再提供自己的 `LLM_BASE_URL` 和 `LLM_API_KEY`
+- 对 `concurrency limit exceeded`、`rate limit`、`timeout`、`socket hang up`、HTTP `429/5xx` 等可恢复错误会自动 retry + backoff
+
+## OpenClaw 排障
+
+- `404 Not Found`：通常是 OpenClaw Gateway 没开 chat completions 端点；启用 `gateway.http.endpoints.chatCompletions.enabled = true` 后重启 gateway
+- `401 Unauthorized`：通常是网关认证没配好；检查 `OPENCLAW_GATEWAY_TOKEN` / `OPENCLAW_GATEWAY_PASSWORD`
 
 ## OKX OnchainOS Skills（可选）
 

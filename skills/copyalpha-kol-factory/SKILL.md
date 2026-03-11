@@ -14,23 +14,24 @@ Use this skill when the user wants to:
 ## Required inputs
 
 - Twitter/X username
-- `TWITTER_BEARER_TOKEN`
+- `SOCIALDATA_API_KEY`
 - 可用的 OpenClaw Gateway（或其他兼容 OpenAI Chat Completions 的 LLM 网关）
 
-`NITTER_INSTANCES`、OpenClaw Gateway 凭据和 OKX 配置都按需提供。
+`LLM_PROVIDER`、`OPENCLAW_GATEWAY_BASE_URL`、`OPENCLAW_GATEWAY_TOKEN` / `OPENCLAW_GATEWAY_PASSWORD`、`LLM_BASE_URL`、`LLM_API_KEY`、`LLM_TIMEOUT_MS`、`LLM_MAX_RETRIES`、`LLM_RETRY_BASE_DELAY_MS`、`LLM_RETRY_MAX_DELAY_MS`、`NITTER_INSTANCES` 和 OKX 配置都按需提供。
 在 OpenClaw-first 模式下，不要额外要求用户在 CopyAlpha 工作区里填写模型厂商 Key；这些应由 OpenClaw 自己管理。
+如果用户走 OpenClaw，先确认 Gateway 已启用 `gateway.http.endpoints.chatCompletions.enabled = true`。
 
 ## Workflow
 
 1. Reuse an existing CopyAlpha workspace if one already exists.
 2. Otherwise run `scripts/bootstrap_copyalpha.sh <workspace_dir>`.
-3. Make sure `<workspace_dir>/.env` contains `TWITTER_BEARER_TOKEN` and, only when needed, OpenClaw gateway auth settings before harvesting.
+3. Make sure `<workspace_dir>/.env` contains `SOCIALDATA_API_KEY`, plus either OpenClaw gateway settings or generic OpenAI-compatible LLM settings before harvesting.
 4. Run `scripts/materialize_kol.sh <workspace_dir> @username [history_depth]`.
 5. Report both the generated bundle in `generated-skills/kol-<username>/` and the local skill-system install paths.
 
 ## Bundled scripts
 
-- `scripts/run_copyalpha.sh`: resolves the CopyAlpha CLI by preferring a local `copyalpha` binary, then falling back to `npx github:Jnnndjjsnxbhhunheng/CopyAlpha`.
+- `scripts/run_copyalpha.sh`: resolves the CopyAlpha CLI by preferring `COPYALPHA_BIN`, then a local built checkout (including `copyalpha-local/dist/cli.js`), then a local `copyalpha` binary, and finally `npx github:Jnnndjjsnxbhhunheng/CopyAlpha`.
 - `scripts/bootstrap_copyalpha.sh`: creates a CopyAlpha workspace through the resolved CLI, prepares `.env`, and creates the `generated-skills` directory.
 - `scripts/materialize_kol.sh`: runs `forge materialize` so the generated skill is installed into local skill systems by default. It defaults to `openclaw,codex,claude,bundle`.
 
@@ -48,5 +49,5 @@ By default the generated KOL skill is installed directly to:
 - `forge materialize` both tracks the account and scrapes tweets before forging the new skill.
 - The generated KOL skill does not need a publish step; once installed into the target skill directories it is ready to use.
 - If the user names multiple KOLs, process them one by one.
-- Set `COPYALPHA_BIN` to force a specific local CLI path, or `COPYALPHA_NPX_SPEC` to test a different GitHub repo/ref.
+- Set `COPYALPHA_BIN` to force a specific local CLI path, `COPYALPHA_LOCAL_WORKSPACE` / `COPYALPHA_LOCAL_DIR` to point at a maintained local checkout, or `COPYALPHA_NPX_SPEC` to test a different GitHub repo/ref.
 - These scripts use network and package installation, so request approval when needed.

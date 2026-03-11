@@ -127,7 +127,7 @@ Use $copyalpha-kol-factory to harvest @inversebrah and forge a new KOL skill.
 
 Required:
 
-- `TWITTER_BEARER_TOKEN`
+- `SOCIALDATA_API_KEY`
 
 Common OpenClaw settings:
 
@@ -135,6 +135,13 @@ Common OpenClaw settings:
 - `OPENCLAW_GATEWAY_BASE_URL=http://127.0.0.1:18789/v1`
 - `OPENCLAW_AGENT_ID=main`
 - `OPENCLAW_GATEWAY_TOKEN` or `OPENCLAW_GATEWAY_PASSWORD` (only if your gateway requires auth)
+- make sure the OpenClaw Gateway `chatCompletions` endpoint is enabled: `gateway.http.endpoints.chatCompletions.enabled = true`
+
+Optional OpenAI-compatible mode:
+
+- `LLM_PROVIDER=openai-compatible`
+- `LLM_BASE_URL=https://your-llm-gateway/v1`
+- `LLM_API_KEY=your-api-key`
 
 ### 5) Let the factory skill harvest, distill, forge, and install
 
@@ -175,16 +182,19 @@ copyalpha consult analyze PEPE
 
 | Variable | Required | Description |
 |---|---|---|
-| `TWITTER_BEARER_TOKEN` | Yes | Twitter API v2 bearer token |
+| `SOCIALDATA_API_KEY` | Yes | SocialData API key from `socialdata.tools` |
 | `LLM_PROVIDER` | No | Defaults to `openclaw`; can be `openai-compatible` |
 | `LLM_MODEL` | No | Defaults to `openclaw` |
-| `OPENCLAW_GATEWAY_BASE_URL` | No | Defaults to `http://127.0.0.1:18789/v1` |
+| `OPENCLAW_GATEWAY_BASE_URL` | No | OpenClaw gateway base URL, default `http://127.0.0.1:18789/v1` |
 | `OPENCLAW_AGENT_ID` | No | Defaults to `main` |
 | `OPENCLAW_GATEWAY_TOKEN` | No | OpenClaw gateway token auth |
 | `OPENCLAW_GATEWAY_PASSWORD` | No | OpenClaw gateway password auth |
-| `LLM_BASE_URL` | No | Override for generic OpenAI-compatible backends |
-| `LLM_API_KEY` | No | API key for generic OpenAI-compatible backends |
+| `LLM_BASE_URL` | No | Base URL for generic OpenAI-compatible backends; can also override the default OpenClaw URL |
+| `LLM_API_KEY` | No | API key for generic OpenAI-compatible backends; can also act as a bearer override |
 | `LLM_TIMEOUT_MS` | No | LLM timeout, default `120000` |
+| `LLM_MAX_RETRIES` | No | Max retries for recoverable LLM failures, default `4` |
+| `LLM_RETRY_BASE_DELAY_MS` | No | Base retry delay in ms, default `1500` |
+| `LLM_RETRY_MAX_DELAY_MS` | No | Max retry backoff in ms, default `15000` |
 
 ## OpenClaw-first LLM Flow
 
@@ -192,8 +202,15 @@ The current version no longer depends on a provider-specific SDK in the CopyAlph
 Instead, it uses an **OpenClaw-first OpenAI-compatible flow**:
 
 - sends requests to OpenClaw Gateway `/v1/chat/completions`
+- sends `Authorization: Bearer ...` automatically when auth is configured
 - uses `x-openclaw-agent-id` to target the OpenClaw agent
 - can fall back to any generic OpenAI-compatible backend if you explicitly configure one
+- automatically retries with backoff on recoverable failures like `concurrency limit exceeded`, `rate limit`, `timeout`, `socket hang up`, and HTTP `429/5xx`
+
+## OpenClaw Troubleshooting
+
+- `404 Not Found`: usually means the OpenClaw Gateway chat completions endpoint is disabled; enable `gateway.http.endpoints.chatCompletions.enabled = true` and restart the gateway
+- `401 Unauthorized`: usually means gateway auth is misconfigured; check `OPENCLAW_GATEWAY_TOKEN` / `OPENCLAW_GATEWAY_PASSWORD`
 
 In practice this means:
 

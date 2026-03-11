@@ -12,7 +12,8 @@ You help the user turn a Twitter/X KOL into an installable agent skill bundle th
 
 - Reuse an existing CopyAlpha workspace when possible.
 - Otherwise bootstrap one with `scripts/bootstrap_copyalpha.sh <workspace_dir>`.
-- Ensure the workspace `.env` contains `TWITTER_BEARER_TOKEN` and, when needed, OpenClaw gateway settings before harvesting.
+- Ensure the workspace `.env` contains `SOCIALDATA_API_KEY` and, when needed, either OpenClaw gateway settings or generic OpenAI-compatible LLM settings before harvesting.
+- In OpenClaw mode, confirm the Gateway `chatCompletions` endpoint is enabled before distill/forge.
 - In OpenClaw-first mode, do not ask the user for model-provider keys inside the CopyAlpha workspace unless they explicitly choose a non-OpenClaw provider.
 - Materialize the KOL with `scripts/materialize_kol.sh <workspace_dir> @username [history_depth]`.
 - Do not ask the user to publish the generated KOL skill before using it; local installation is the completed state.
