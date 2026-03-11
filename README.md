@@ -52,6 +52,7 @@ Use $copyalpha-kol-factory to harvest @inversebrah and forge a new KOL skill.
 
 ```bash
 npx copyalpha@latest install-skill
+npx skills add okx/onchainos-skills
 ```
 
 适合大多数最终用户：
@@ -227,9 +228,9 @@ copyalpha consult leaderboard
 | 变量 | 必需 | 说明 |
 |---|---|---|
 | `SOCIALDATA_API_KEY` | 是 | SocialData API Key（从 [socialdata.tools](https://socialdata.tools) 获取） |
-| `OKX_API_KEY` | 否 | OKX OnchainOS API Key（链上查询用） |
-| `OKX_SECRET_KEY` | 否 | OKX Secret Key |
-| `OKX_PASSPHRASE` | 否 | OKX Passphrase |
+| `OKX_API_KEY` | 是 | OKX OnchainOS API Key（链上查询用） |
+| `OKX_SECRET_KEY` | 是 | OKX Secret Key |
+| `OKX_PASSPHRASE` | 是 | OKX Passphrase |
 | `HARVEST_INTERVAL_SECONDS` | 否 | 增量监控轮询间隔 |
 | `HARVEST_HISTORY_DEPTH` | 否 | 默认历史抓取深度 |
 | `HARVEST_MAX_CONCURRENT` | 否 | 最大并发抓取数 |
