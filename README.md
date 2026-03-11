@@ -23,7 +23,7 @@ CopyAlpha 是一个 **KOL Skill 工厂**。
 它会抓取指定 KOL 的历史推文，提炼交易风格、叙事判断、Token 观点和重复模式，然后生成新的 `kol-{username}` Skill，并安装到不同 agent 可读取的位置。
 
 这不是跟单机器人，也不是一次性摘要工具。
-它更像一个“专家知识压缩器”——把某个 KOL 过去公开表达过的交易思路，整理成一个可以长期复用的技能包。
+它更像一个"专家知识压缩器"——把某个 KOL 过去公开表达过的交易思路，整理成一个可以长期复用的技能包。
 
 ## TL;DR
 
@@ -123,26 +123,7 @@ Use $copyalpha-kol-factory to harvest @inversebrah and forge a new KOL skill.
 
 **必填**
 
-- `TWITTER_BEARER_TOKEN`
-
-**常用 OpenClaw 配置**
-
-- `LLM_PROVIDER=openclaw`
-- `OPENCLAW_GATEWAY_BASE_URL=http://127.0.0.1:18789/v1`
-- `OPENCLAW_AGENT_ID=main`
-- `OPENCLAW_GATEWAY_TOKEN` 或 `OPENCLAW_GATEWAY_PASSWORD`（仅在网关开启认证时需要）
-
-**可选**
-
-- `NITTER_INSTANCES`
-- `OKX_API_KEY`
-- `OKX_SECRET_KEY`
-- `OKX_PASSPHRASE`
-- `WALLET_ADDRESS`
-- `LLM_MODEL`
-- `LLM_BASE_URL`
-- `LLM_API_KEY`
-- `LLM_TIMEOUT_MS`
+- `SOCIALDATA_API_KEY` — 从 [socialdata.tools](https://socialdata.tools) 获取
 
 ### 5) 工厂 Skill 自动完成采集、蒸馏、安装
 
@@ -245,37 +226,71 @@ copyalpha consult leaderboard
 
 | 变量 | 必需 | 说明 |
 |---|---|---|
-| `TWITTER_BEARER_TOKEN` | 是 | Twitter API v2 Bearer Token |
-| `LLM_PROVIDER` | 否 | 默认 `openclaw`，也可切到 `openai-compatible` |
-| `LLM_MODEL` | 否 | 默认 `openclaw` |
-| `OPENCLAW_GATEWAY_BASE_URL` | 否 | 默认 `http://127.0.0.1:18789/v1` |
-| `OPENCLAW_AGENT_ID` | 否 | 默认 `main`，作为 OpenClaw 目标 agent ID |
-| `OPENCLAW_GATEWAY_TOKEN` | 否 | OpenClaw Gateway 令牌认证 |
-| `OPENCLAW_GATEWAY_PASSWORD` | 否 | OpenClaw Gateway 密码认证 |
-| `LLM_BASE_URL` | 否 | 通用 OpenAI-compatible 接口地址覆盖项 |
-| `LLM_API_KEY` | 否 | 通用 OpenAI-compatible 接口认证 |
-| `LLM_TIMEOUT_MS` | 否 | LLM 请求超时，默认 `120000` |
-| `NITTER_INSTANCES` | 否 | Nitter 实例列表，作为降级抓取方案 |
-| `OKX_API_KEY` | 否 | OKX OnchainOS API Key |
+| `SOCIALDATA_API_KEY` | 是 | SocialData API Key（从 [socialdata.tools](https://socialdata.tools) 获取） |
+| `OKX_API_KEY` | 否 | OKX OnchainOS API Key（链上查询用） |
 | `OKX_SECRET_KEY` | 否 | OKX Secret Key |
 | `OKX_PASSPHRASE` | 否 | OKX Passphrase |
-| `WALLET_ADDRESS` | 否 | 钱包地址 |
 | `HARVEST_INTERVAL_SECONDS` | 否 | 增量监控轮询间隔 |
 | `HARVEST_HISTORY_DEPTH` | 否 | 默认历史抓取深度 |
 | `HARVEST_MAX_CONCURRENT` | 否 | 最大并发抓取数 |
 
-## OpenClaw-first LLM 模式
+LLM 调用由本地 OpenClaw Gateway（`http://127.0.0.1:18789/v1`）自动处理，无需额外配置。
 
-当前版本已经从“模型 SDK 直连”改成了 **OpenClaw-first 的 OpenAI-compatible 调用**：
+## OKX OnchainOS Skills（可选）
 
-- 默认向 OpenClaw Gateway 发起 `/v1/chat/completions` 请求
-- 默认通过 `x-openclaw-agent-id` 指定 OpenClaw 里的 agent
-- 如果你不走 OpenClaw，也可以把 `LLM_PROVIDER` 切成 `openai-compatible`，再提供自己的 `LLM_BASE_URL` 和 `LLM_API_KEY`
+Consult 模块在做链上验证时会调用 [OKX OnchainOS Skills](https://github.com/okx/onchainos-skills)（价格、持仓、Smart Money、Token 分析等）。
+OnchainOS Skills 提供 5 个核心能力：
 
-换句话说：
+| Skill | 用途 |
+|---|---|
+| `okx-wallet-portfolio` | 钱包余额、Token 持仓、组合估值 |
+| `okx-dex-market` | 实时价格、K 线、成交记录、Meme 扫描 |
+| `okx-dex-token` | Token 搜索、元数据、市值排名、持仓者分析 |
+| `okx-dex-swap` | DEX 聚合交易，接入 500+ 流动性源 |
+| `okx-onchain-gateway` | Gas 估算、交易模拟、广播、订单追踪 |
 
-- **OpenClaw 模式**：CopyAlpha 只连接 OpenClaw Gateway，不直接持有模型厂商 Key
-- **独立模式**：只需要一个兼容 OpenAI Chat Completions 的 LLM 网关即可
+### 1) 安装 OnchainOS Skills
+
+**通用方式（推荐，自动检测环境）：**
+
+```bash
+npx skills add okx/onchainos-skills
+```
+
+**Claude Code：**
+
+```
+/plugin marketplace add okx/onchainos-skills
+/plugin install onchainos-skills
+```
+
+**Codex CLI：**
+
+告诉 Codex："Fetch and follow instructions from https://raw.githubusercontent.com/okx/onchainos-skills/refs/heads/main/.codex/INSTALL.md"
+
+**macOS / Linux CLI：**
+
+```bash
+curl -sSL https://raw.githubusercontent.com/okx/onchainos-skills/main/install.sh | sh
+```
+
+### 2) 获取 API Key
+
+1. 前往 [OKX 开发者后台](https://web3.okx.com/onchain-os/dev-portal)
+2. 点击 **Connect Wallet** 登录（推荐 OKX Wallet）
+3. 在 **Settings** 绑定邮箱 / 手机号完成验证
+4. 选择项目 → **API keys** → **Create API key**，填入名称和 Passphrase
+5. 系统生成 **API Key** + **Secret Key**，连同你设的 **Passphrase** 一起保存
+
+写入 `.env`：
+
+```bash
+OKX_API_KEY=your-api-key
+OKX_SECRET_KEY=your-secret-key
+OKX_PASSPHRASE=your-passphrase
+```
+
+> 仓库自带沙箱测试 Key，可用于本地验证，但有频率限制。生产环境务必用自己的 Key。
 
 ## 项目工作流
 
@@ -299,7 +314,7 @@ KOL Skill Bundle
 
 | 模块 | 职责 |
 |---|---|
-| `Harvest` | 抓取推文，支持 Twitter API / Nitter / 降级方案 |
+| `Harvest` | 通过 SocialData API 抓取推文（tweets + highlights） |
 | `Distill` | 用 LLM 提取交易信号、风格、叙事、模式 |
 | `Forge` | 生成 KOL Skill 文件，并安装到不同 agent 目标 |
 | `Consult` | 加载 KOL Skills，结合链上数据输出综合分析 |
@@ -310,7 +325,7 @@ KOL Skill Bundle
 
 - 你想把某个 KOL 的历史观点整理成一个长期可复用的 agent skill
 - 你希望同一个 KOL Skill 同时给 OpenClaw、Claude Code、Codex、其他 agent 使用
-- 你想做“多 KOL 共识分析”，而不是手工翻历史推文
+- 你想做"多 KOL 共识分析"，而不是手工翻历史推文
 - 你想把 KOL 的判断模式沉淀成结构化知识，而不是一次性总结
 
 ## 重名处理

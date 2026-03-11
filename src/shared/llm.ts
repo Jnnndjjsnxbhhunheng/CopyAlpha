@@ -1,5 +1,5 @@
 /**
- * LLM client wrapper for OpenClaw-first, OpenAI-compatible backends.
+ * LLM client wrapper — hardcoded to local OpenClaw gateway.
  *
  * Deps: shared/config
  */
@@ -26,6 +26,8 @@ interface ChatCompletionResponse {
   };
 }
 
+const TIMEOUT_MS = 120_000;
+
 /**
  * Send a prompt and expect JSON back.
  */
@@ -36,7 +38,7 @@ export async function generateJSON<T>(req: LLMRequest): Promise<T> {
 
 export async function generate(req: LLMRequest): Promise<string> {
   const response = await postJson<ChatCompletionResponse>(
-    resolveChatCompletionsUrl(),
+    `${config.llm.baseUrl}/chat/completions`,
     buildHeaders(),
     buildRequestBody(req)
   );
@@ -51,17 +53,6 @@ export async function generate(req: LLMRequest): Promise<string> {
     throw new Error("LLM response did not contain text content");
   }
   return text;
-}
-
-function resolveChatCompletionsUrl(): string {
-  const trimmed = config.llm.baseUrl.replace(/\/+$/, "");
-  if (trimmed.endsWith("/chat/completions")) {
-    return trimmed;
-  }
-  if (trimmed.endsWith("/v1")) {
-    return `${trimmed}/chat/completions`;
-  }
-  return `${trimmed}/v1/chat/completions`;
 }
 
 function buildRequestBody(req: LLMRequest): Record<string, unknown> {
@@ -83,19 +74,10 @@ function buildRequestBody(req: LLMRequest): Record<string, unknown> {
 }
 
 function buildHeaders(): Record<string, string> {
-  const headers: Record<string, string> = {
+  return {
     "Content-Type": "application/json",
+    "x-openclaw-agent-id": config.llm.agentId,
   };
-
-  if (config.llm.apiKey) {
-    headers.Authorization = `Bearer ${config.llm.apiKey}`;
-  }
-
-  if (config.llm.provider === "openclaw") {
-    headers["x-openclaw-agent-id"] = config.llm.openclawAgentId;
-  }
-
-  return headers;
 }
 
 function normalizeMessageContent(
@@ -134,7 +116,7 @@ async function postJson<T>(
           ...headers,
           "Content-Length": Buffer.byteLength(payload).toString(),
         },
-        timeout: config.llm.timeoutMs,
+        timeout: TIMEOUT_MS,
       },
       (response) => {
         let raw = "";
@@ -166,7 +148,7 @@ async function postJson<T>(
     );
 
     request.on("timeout", () => {
-      request.destroy(new Error(`LLM request timed out after ${config.llm.timeoutMs}ms`));
+      request.destroy(new Error(`LLM request timed out after ${TIMEOUT_MS}ms`));
     });
     request.on("error", reject);
     request.write(payload);

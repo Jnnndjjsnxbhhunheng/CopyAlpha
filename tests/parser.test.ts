@@ -1,4 +1,4 @@
-import { extractCashtags, extractHashtags, parseApiTweet } from "../src/harvest/parser";
+import { extractCashtags, extractHashtags, parseSocialDataTweet } from "../src/harvest/parser";
 
 describe("parser", () => {
   describe("extractCashtags", () => {
@@ -30,43 +30,41 @@ describe("parser", () => {
     });
   });
 
-  describe("parseApiTweet", () => {
-    it("parses a minimal API tweet", () => {
+  describe("parseSocialDataTweet", () => {
+    it("parses a SocialData API tweet", () => {
       const data = {
-        id: "123456",
-        text: "Bullish on $ETH",
-        created_at: "2026-01-01T00:00:00Z",
-        author_id: "user1",
-        public_metrics: {
-          like_count: 100,
-          retweet_count: 20,
-          reply_count: 5,
-          impression_count: 1000,
+        id_str: "123456",
+        full_text: "Bullish on $ETH",
+        tweet_created_at: "2026-01-01T00:00:00.000000Z",
+        favorite_count: 100,
+        retweet_count: 20,
+        reply_count: 5,
+        views_count: 1000,
+        user: { screen_name: "testuser" },
+        entities: {
+          hashtags: [],
+          urls: [],
+          symbols: [{ text: "ETH" }],
         },
       };
 
-      const includes = {
-        users: [{ id: "user1", username: "testuser" }],
-      };
-
-      const tweet = parseApiTweet(data, includes);
+      const tweet = parseSocialDataTweet(data);
       expect(tweet.tweet_id).toBe("123456");
       expect(tweet.author_username).toBe("testuser");
       expect(tweet.metrics.likes).toBe(100);
+      expect(tweet.metrics.views).toBe(1000);
       expect(tweet.text).toBe("Bullish on $ETH");
+      expect(tweet.context.cashtags).toContain("ETH");
     });
 
-    it("handles missing includes", () => {
+    it("handles missing fields gracefully", () => {
       const data = {
-        id: "789",
-        text: "test",
-        created_at: "2026-01-01T00:00:00Z",
-        author_id: "user2",
-        public_metrics: {},
+        id_str: "789",
+        full_text: "test",
       };
 
-      const tweet = parseApiTweet(data);
-      expect(tweet.author_username).toBe("user2");
+      const tweet = parseSocialDataTweet(data);
+      expect(tweet.author_username).toBe("unknown");
       expect(tweet.metrics.likes).toBe(0);
     });
   });

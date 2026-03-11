@@ -20,39 +20,29 @@ function optionalInt(key: string, fallback: number): number {
   return parsed;
 }
 
-export type LLMProvider = "openclaw" | "openai-compatible";
+function required(key: string): string {
+  const val = process.env[key];
+  if (!val) {
+    throw new Error(`Missing required env var: ${key}`);
+  }
+  return val;
+}
 
 export const config = {
-  twitter: {
-    bearerToken: optional("TWITTER_BEARER_TOKEN", ""),
-    nitterInstances: optional("NITTER_INSTANCES", "")
-      .split(",")
-      .filter(Boolean),
-  },
-
-  llm: {
-    provider: optional("LLM_PROVIDER", "openclaw") as LLMProvider,
-    model: optional("LLM_MODEL", "openclaw"),
-    baseUrl: optional(
-      "LLM_BASE_URL",
-      optional("OPENCLAW_GATEWAY_BASE_URL", "http://127.0.0.1:18789/v1")
-    ),
-    apiKey: optional(
-      "LLM_API_KEY",
-      optional(
-        "OPENCLAW_GATEWAY_TOKEN",
-        optional("OPENCLAW_GATEWAY_PASSWORD", "")
-      )
-    ),
-    openclawAgentId: optional("OPENCLAW_AGENT_ID", "main"),
-    timeoutMs: optionalInt("LLM_TIMEOUT_MS", 120000),
+  socialdata: {
+    apiKey: optional("SOCIALDATA_API_KEY", ""),
   },
 
   okx: {
     apiKey: optional("OKX_API_KEY", ""),
     secretKey: optional("OKX_SECRET_KEY", ""),
     passphrase: optional("OKX_PASSPHRASE", ""),
-    walletAddress: optional("WALLET_ADDRESS", ""),
+  },
+
+  llm: {
+    baseUrl: "http://127.0.0.1:18789/v1",
+    model: "openclaw",
+    agentId: "main",
   },
 
   harvest: {

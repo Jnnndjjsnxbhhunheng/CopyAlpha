@@ -154,13 +154,7 @@ async function getSmartMoneyFlow(
 }
 
 async function getPortfolio(): Promise<Portfolio> {
-  if (!config.okx.walletAddress) {
-    throw new Error("WALLET_ADDRESS not configured");
-  }
-  return callSkill("okx-wallet-portfolio", {
-    action: "get_total_value",
-    wallet: config.okx.walletAddress,
-  });
+  throw new Error("WALLET_ADDRESS not configured — removed from config");
 }
 
 /**

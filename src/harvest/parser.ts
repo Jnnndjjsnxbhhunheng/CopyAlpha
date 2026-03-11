@@ -1,95 +1,74 @@
 /**
- * Tweet parsing: normalize raw API/scrape data into RawTweet format.
+ * Tweet parsing: normalize SocialData API responses into RawTweet format.
  */
 
 import type { RawTweet, TweetMetrics, TweetContext } from "../types";
 
-/** Parse a Twitter API v2 tweet object into RawTweet */
-export function parseApiTweet(
-  data: any,
-  includes?: any
-): RawTweet {
-  const authorUser = includes?.users?.find(
-    (u: any) => u.id === data.author_id
-  );
-
+/**
+ * Parse a SocialData API tweet object into RawTweet.
+ *
+ * SocialData response shape (key fields):
+ *   id_str, full_text, tweet_created_at,
+ *   favorite_count, retweet_count, reply_count, quote_count, views_count,
+ *   in_reply_to_status_id_str, is_quote_status,
+ *   user.screen_name,
+ *   entities.urls[], entities.hashtags[], entities.symbols[],
+ *   entities.media[]
+ */
+export function parseSocialDataTweet(data: any): RawTweet {
   return {
-    tweet_id: data.id,
-    author_username: authorUser?.username ?? data.author_id ?? "unknown",
-    text: data.text ?? "",
-    created_at: data.created_at ?? new Date().toISOString(),
-    metrics: parseApiMetrics(data.public_metrics),
-    context: parseApiContext(data, includes),
+    tweet_id: data.id_str ?? String(data.id ?? ""),
+    author_username: data.user?.screen_name ?? "unknown",
+    text: data.full_text ?? data.text ?? "",
+    created_at: data.tweet_created_at ?? new Date().toISOString(),
+    metrics: parseMetrics(data),
+    context: parseContext(data),
   };
 }
 
-function parseApiMetrics(metrics: any): TweetMetrics {
+function parseMetrics(data: any): TweetMetrics {
   return {
-    likes: metrics?.like_count ?? 0,
-    retweets: metrics?.retweet_count ?? 0,
-    replies: metrics?.reply_count ?? 0,
-    views: metrics?.impression_count ?? 0,
+    likes: data.favorite_count ?? 0,
+    retweets: data.retweet_count ?? 0,
+    replies: data.reply_count ?? 0,
+    views: data.views_count ?? 0,
   };
 }
 
-function parseApiContext(data: any, includes?: any): TweetContext {
+function parseContext(data: any): TweetContext {
   const entities = data.entities ?? {};
-  const refs = data.referenced_tweets ?? [];
 
-  const replyRef = refs.find((r: any) => r.type === "replied_to");
-  const quoteRef = refs.find((r: any) => r.type === "quoted");
+  const urls: string[] = (entities.urls ?? []).map(
+    (u: any) => u.expanded_url ?? u.url ?? ""
+  ).filter(Boolean);
 
-  return {
-    is_thread: !!replyRef && replyRef.id !== undefined,
-    thread_position: undefined,
-    is_reply_to: replyRef?.id,
-    is_quote_of: quoteRef?.id,
-    media_urls: extractMediaUrls(includes?.media, data.attachments),
-    urls: (entities.urls ?? []).map((u: any) => u.expanded_url ?? u.url),
-    hashtags: (entities.hashtags ?? []).map((h: any) => h.tag),
-    cashtags: (entities.cashtags ?? []).map((c: any) => c.tag),
-  };
-}
+  const hashtags: string[] = (entities.hashtags ?? []).map(
+    (h: any) => h.text ?? h.tag ?? ""
+  ).filter(Boolean);
 
-function extractMediaUrls(
-  mediaIncludes: any[] | undefined,
-  attachments: any
-): string[] {
-  if (!mediaIncludes || !attachments?.media_keys) return [];
-  const keys = new Set(attachments.media_keys);
-  return mediaIncludes
-    .filter((m: any) => keys.has(m.media_key))
-    .map((m: any) => m.url ?? m.preview_image_url ?? "")
-    .filter(Boolean);
-}
+  const symbols: string[] = (entities.symbols ?? []).map(
+    (s: any) => s.text ?? ""
+  ).filter(Boolean);
 
-/** Parse an HTML-scraped tweet (from Nitter) into RawTweet */
-export function parseNitterTweet(
-  username: string,
-  tweetEl: any
-): RawTweet {
-  const text = tweetEl.text ?? "";
-  const cashtags = extractCashtags(text);
-  const hashtags = extractHashtags(text);
+  const mediaUrls: string[] = (entities.media ?? []).map(
+    (m: any) => m.media_url_https ?? m.media_url ?? ""
+  ).filter(Boolean);
+
+  // Also extract cashtags from text as fallback
+  const textCashtags = extractCashtags(data.full_text ?? data.text ?? "");
+  const allCashtags = [
+    ...symbols,
+    ...textCashtags.filter((c) => !symbols.includes(c)),
+  ];
 
   return {
-    tweet_id: tweetEl.id ?? `nitter-${Date.now()}-${Math.random()}`,
-    author_username: username,
-    text,
-    created_at: tweetEl.date ?? new Date().toISOString(),
-    metrics: {
-      likes: tweetEl.likes ?? 0,
-      retweets: tweetEl.retweets ?? 0,
-      replies: tweetEl.replies ?? 0,
-      views: 0,
-    },
-    context: {
-      is_thread: false,
-      media_urls: tweetEl.images ?? [],
-      urls: tweetEl.links ?? [],
-      hashtags,
-      cashtags,
-    },
+    is_thread: false,
+    is_reply_to: data.in_reply_to_status_id_str ?? undefined,
+    is_quote_of: data.is_quote_status ? data.quoted_status_id_str : undefined,
+    media_urls: mediaUrls,
+    urls,
+    hashtags,
+    cashtags: allCashtags,
   };
 }
 
