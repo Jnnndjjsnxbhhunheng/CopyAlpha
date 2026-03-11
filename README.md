@@ -2,15 +2,14 @@
 
 # CopyAlpha
 
-**Turn a Twitter/X KOL into an installable agent skill.**  
-**把 Twitter / X 上的 KOL，沉淀成可复用、可全局安装的 Agent Skill。**
+**把 Twitter / X 上的 KOL，沉淀成可复用、可全局安装的 Agent Skill**
 
 [![中文文档](https://img.shields.io/badge/Docs-%E4%B8%AD%E6%96%87-1677FF?style=for-the-badge&logo=bookstack&logoColor=white)](README.zh-CN.md)
 [![English Docs](https://img.shields.io/badge/Docs-English-7C3AED?style=for-the-badge&logo=readme&logoColor=white)](README.en.md)
 [![npx](https://img.shields.io/badge/npx-copyalpha@latest-CB3837?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-339933?style=for-the-badge&logo=node.js&logoColor=white)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](package.json)
-[![Python Planned](https://img.shields.io/badge/Python-Planned-3776AB?style=for-the-badge&logo=python&logoColor=white)](README.en.md)
+[![Python Planned](https://img.shields.io/badge/Python-Planned-3776AB?style=for-the-badge&logo=python&logoColor=white)](README.md)
 [![OpenClaw First](https://img.shields.io/badge/OpenClaw-First-111827?style=for-the-badge&logo=rocket&logoColor=white)](README.zh-CN.md)
 [![License](https://img.shields.io/badge/License-Apache_2.0-D97706?style=for-the-badge&logo=apache&logoColor=white)](LICENSE)
 
@@ -18,111 +17,308 @@
 
 ---
 
-## Why CopyAlpha / 它解决什么问题？
+## 什么是 CopyAlpha
 
-CopyAlpha is a **KOL Skill Factory**. It harvests tweets from a specific Twitter/X user, distills that user's trading style, narratives, token opinions, and recurring patterns, then forges a brand new `kol-{username}` skill you can install into multiple agent runtimes.
+CopyAlpha 是一个 **KOL Skill 工厂**。
+它会抓取指定 KOL 的历史推文，提炼交易风格、叙事判断、Token 观点和重复模式，然后生成新的 `kol-{username}` Skill，并安装到不同 agent 可读取的位置。
 
-CopyAlpha 是一个 **KOL Skill 工厂**。它会抓取指定 KOL 的历史推文，提炼交易风格、叙事判断、Token 观点和重复模式，然后生成新的 `kol-{username}` Skill，并安装到多个 agent 环境中。
+这不是跟单机器人，也不是一次性摘要工具。
+它更像一个“专家知识压缩器”——把某个 KOL 过去公开表达过的交易思路，整理成一个可以长期复用的技能包。
 
-It is **not** a copy-trading bot, and **not** just a one-off summary tool. It is a reusable knowledge packaging pipeline for agent-native workflows.
+## TL;DR
 
-它**不是**跟单机器人，也**不是**一次性摘要工具；它更像一个面向 agent 的知识沉淀与安装流水线。
-
-## Highlights / 核心亮点
-
-- **OpenClaw-first**: routes LLM calls through the OpenClaw Gateway instead of requiring provider keys inside the CopyAlpha workspace.
-- **Multi-agent install**: installs generated skills into `OpenClaw`, `Codex`, `Claude Code`, and a generic portable bundle.
-- **From tweets to skills**: harvest → distill → forge → install.
-- **Reusable output**: every KOL becomes a durable, versionable skill bundle.
-
-- **OpenClaw 优先**：默认走 OpenClaw Gateway，不要求在 CopyAlpha 工作区里直配模型厂商 Key。
-- **多 Agent 安装**：生成的 skill 可同时安装到 `OpenClaw`、`Codex`、`Claude Code` 和通用 bundle。
-- **从推文到技能**：采集 → 蒸馏 → 锻造 → 安装。
-- **可重复使用**：每个 KOL 最终都会沉淀成一个可复用、可迭代的 skill bundle。
-
-## Quick Start / 快速开始
-
-### 1) Install the factory skill / 安装工厂 Skill
+如果你是最终用户，最短流程只有 3 步：
 
 ```bash
 npx copyalpha@latest install-skill
 ```
 
-### 2) Restart your agent / 重启你的 agent 工具
-
-Supported runtimes / 支持的运行时：
-
-- `OpenClaw`
-- `Claude Code`
-- `Codex`
-- other agents that can read local portable skill bundles
-- 其他支持读取本地 skill / subagent 的 agent
-
-### 3) Ask your agent to forge a KOL skill / 让 agent 生成新的 KOL Skill
+重启你的 agent 工具，然后对它说：
 
 ```text
 Use $copyalpha-kol-factory to harvest @inversebrah and forge a new KOL skill.
 ```
 
-或：
+填好 `.env` 里的最少配置之后，CopyAlpha 会：
+
+- 抓取这个 KOL 的历史推文
+- 蒸馏出交易风格、叙事、Token 观点和模式
+- 生成新的 `kol-inversebrah` Skill
+- 自动安装到 OpenClaw、Claude Code、Codex 和通用 bundle 目录
+
+## 安装方式
+
+### 正式发布版（推荐）
+
+```bash
+npx copyalpha@latest install-skill
+```
+
+适合大多数最终用户：
+
+- 直接从 npm 拉取已构建好的 CLI
+- 不依赖本地仓库副本
+- 安装后即可把工厂 Skill 写入 `OpenClaw` / `Codex` / `Claude Code` / 通用 bundle 目录
+
+### GitHub 回退安装
+
+```bash
+npx github:Jnnndjjsnxbhhunheng/CopyAlpha install-skill
+```
+
+适合 npm 还没发布、或你想先试主分支版本时使用。
+
+### 本地开发安装
+
+```bash
+npm install
+npm run build
+npm link
+copyalpha install-skill
+```
+
+适合本地调试 CLI 和 Skill 模板。
+
+## 用户全程使用流程
+
+### 1) 安装工厂 Skill
+
+```bash
+npx copyalpha@latest install-skill
+```
+
+这个命令会把 `copyalpha-kol-factory` 安装到以下位置：
+
+- OpenClaw：`~/.openclaw/skills/copyalpha-kol-factory/`
+- Codex / OpenAI 风格：`~/.codex/skills/copyalpha-kol-factory/`
+- Claude Code：`~/.claude/agents/copyalpha-kol-factory.md`
+- 通用 portable bundle：`~/.agent-skills/copyalpha-kol-factory/`
+
+### 2) 重启你的 agent 工具
+
+安装完成后，重启你正在使用的 agent 工具，例如：
+
+- OpenClaw
+- Claude Code
+- Codex
+- 其他支持读取本地 skill / subagent 的 agent
+
+### 3) 在 agent 中调用工厂 Skill
+
+直接对 agent 说：
+
+```text
+Use $copyalpha-kol-factory to harvest @inversebrah and forge a new KOL skill.
+```
+
+也可以用中文表达，例如：
 
 ```text
 用 copyalpha-kol-factory 抓取 @inversebrah 的推文，并生成一个新的 KOL Skill。
 ```
 
-### 4) Fill the minimum config / 填最小配置
+### 4) 填写工作区配置
 
-Required / 必填：
+工厂 Skill 会先初始化一个本地工作区，然后要求你填写 `.env`。
+
+**必填**
 
 - `TWITTER_BEARER_TOKEN`
 
-Usually optional in OpenClaw-first mode / OpenClaw-first 模式下一般按需填写：
+**常用 OpenClaw 配置**
 
-- `OPENCLAW_GATEWAY_BASE_URL`
-- `OPENCLAW_AGENT_ID`
-- `OPENCLAW_GATEWAY_TOKEN`
-- `OPENCLAW_GATEWAY_PASSWORD`
+- `LLM_PROVIDER=openclaw`
+- `OPENCLAW_GATEWAY_BASE_URL=http://127.0.0.1:18789/v1`
+- `OPENCLAW_AGENT_ID=main`
+- `OPENCLAW_GATEWAY_TOKEN` 或 `OPENCLAW_GATEWAY_PASSWORD`（仅在网关开启认证时需要）
 
-## Install Targets / 默认安装位置
+**可选**
 
-| Target | Path | Purpose |
-|---|---|---|
-| OpenClaw | `~/.openclaw/skills/kol-{username}/` | Full skill bundle for OpenClaw |
-| Codex | `~/.codex/skills/kol-{username}/` | Full skill bundle for Codex / OpenAI-style runtimes |
-| Claude Code | `~/.claude/agents/kol-{username}.md` | Claude Code subagent adapter |
-| Portable Bundle | `~/.agent-skills/kol-{username}/` | Generic agent-compatible skill bundle |
+- `NITTER_INSTANCES`
+- `OKX_API_KEY`
+- `OKX_SECRET_KEY`
+- `OKX_PASSPHRASE`
+- `WALLET_ADDRESS`
+- `LLM_MODEL`
+- `LLM_BASE_URL`
+- `LLM_API_KEY`
+- `LLM_TIMEOUT_MS`
 
-## End-to-End Flow / 全流程
+### 5) 工厂 Skill 自动完成采集、蒸馏、安装
 
-```text
-Twitter / X KOL tweets
-        ↓
-Harvest 采集
-        ↓
-Distill 蒸馏
-        ↓
-Forge 锻造
-        ↓
-Install 安装
-        ├── OpenClaw
-        ├── Codex
-        ├── Claude Code
-        └── Portable Bundle
+底层等价于执行：
+
+```bash
+npx copyalpha@latest init
+npx copyalpha@latest forge materialize @inversebrah --install --targets openclaw,codex,claude,bundle
 ```
 
-## Documentation / 文档入口
+这一步会自动完成：
 
-- `README.zh-CN.md` — 完整中文版使用说明
-- `README.en.md` — Full English documentation
+- 追踪该 KOL
+- 抓取历史推文
+- 提取交易信号
+- 蒸馏交易风格 / 宏观看法 / Token 观点 / 重复模式
+- 生成新的 `kol-{username}` Skill
+- 把这个新 Skill 安装到全局 agent 目录
 
-## Name Collision Handling / 重名处理
+### 6) 之后直接使用新生成的 KOL Skill
 
-- If a generated skill name is already taken, CopyAlpha automatically picks a suffix such as `kol-username-2`.
-- If the existing bundle already belongs to the same KOL, CopyAlpha reuses and updates that bundle instead of creating duplicates.
+生成并安装完成后，你就可以在 agent 里继续用这个新 Skill：
+
+```text
+Use $kol-inversebrah to analyze SOL.
+```
+
+或者：
+
+```text
+参考 @inversebrah 的历史交易风格，帮我看一下 PEPE。
+```
+
+## 新 Skill 会安装到哪里
+
+| 目标 | 默认位置 | 用途 |
+|---|---|---|
+| OpenClaw | `~/.openclaw/skills/kol-{username}/` | 给 OpenClaw 直接读取完整 Skill bundle |
+| Codex / OpenAI 风格 | `~/.codex/skills/kol-{username}/` | 给 Codex / OpenAI 风格环境读取 |
+| Claude Code | `~/.claude/agents/kol-{username}.md` | 给 Claude Code 作为 subagent 使用 |
+| 通用 bundle | `~/.agent-skills/kol-{username}/` | 作为跨 agent 的 portable skill bundle |
+
+## 命令行直接使用
+
+### 初始化工作区
+
+```bash
+copyalpha init
+```
+
+### 安装工厂 Skill
+
+```bash
+copyalpha install-skill
+copyalpha install-skill --targets openclaw,claude
+```
+
+### 一键生成并安装新的 KOL Skill
+
+```bash
+copyalpha forge materialize @inversebrah --install
+copyalpha forge materialize @DefiIgnas --count 800 --install
+```
+
+### 安装已经生成好的 KOL Skill
+
+```bash
+copyalpha forge install inversebrah
+copyalpha forge install inversebrah --targets openclaw,claude
+```
+
+### 只生成、不安装
+
+```bash
+copyalpha forge build inversebrah
+```
+
+### 采集命令
+
+```bash
+copyalpha harvest add @inversebrah
+copyalpha harvest status
+copyalpha harvest monitor
+```
+
+### 咨询命令
+
+```bash
+copyalpha consult analyze PEPE
+copyalpha consult ask inversebrah "怎么看 SOL 生态？"
+copyalpha consult consensus SOL
+copyalpha consult critique "用 5% 仓位做多 ARB"
+copyalpha consult recommend
+copyalpha consult leaderboard
+```
+
+## 环境变量
+
+编辑工作区中的 `.env`：
+
+| 变量 | 必需 | 说明 |
+|---|---|---|
+| `TWITTER_BEARER_TOKEN` | 是 | Twitter API v2 Bearer Token |
+| `LLM_PROVIDER` | 否 | 默认 `openclaw`，也可切到 `openai-compatible` |
+| `LLM_MODEL` | 否 | 默认 `openclaw` |
+| `OPENCLAW_GATEWAY_BASE_URL` | 否 | 默认 `http://127.0.0.1:18789/v1` |
+| `OPENCLAW_AGENT_ID` | 否 | 默认 `main`，作为 OpenClaw 目标 agent ID |
+| `OPENCLAW_GATEWAY_TOKEN` | 否 | OpenClaw Gateway 令牌认证 |
+| `OPENCLAW_GATEWAY_PASSWORD` | 否 | OpenClaw Gateway 密码认证 |
+| `LLM_BASE_URL` | 否 | 通用 OpenAI-compatible 接口地址覆盖项 |
+| `LLM_API_KEY` | 否 | 通用 OpenAI-compatible 接口认证 |
+| `LLM_TIMEOUT_MS` | 否 | LLM 请求超时，默认 `120000` |
+| `NITTER_INSTANCES` | 否 | Nitter 实例列表，作为降级抓取方案 |
+| `OKX_API_KEY` | 否 | OKX OnchainOS API Key |
+| `OKX_SECRET_KEY` | 否 | OKX Secret Key |
+| `OKX_PASSPHRASE` | 否 | OKX Passphrase |
+| `WALLET_ADDRESS` | 否 | 钱包地址 |
+| `HARVEST_INTERVAL_SECONDS` | 否 | 增量监控轮询间隔 |
+| `HARVEST_HISTORY_DEPTH` | 否 | 默认历史抓取深度 |
+| `HARVEST_MAX_CONCURRENT` | 否 | 最大并发抓取数 |
+
+## OpenClaw-first LLM 模式
+
+当前版本已经从“模型 SDK 直连”改成了 **OpenClaw-first 的 OpenAI-compatible 调用**：
+
+- 默认向 OpenClaw Gateway 发起 `/v1/chat/completions` 请求
+- 默认通过 `x-openclaw-agent-id` 指定 OpenClaw 里的 agent
+- 如果你不走 OpenClaw，也可以把 `LLM_PROVIDER` 切成 `openai-compatible`，再提供自己的 `LLM_BASE_URL` 和 `LLM_API_KEY`
+
+换句话说：
+
+- **OpenClaw 模式**：CopyAlpha 只连接 OpenClaw Gateway，不直接持有模型厂商 Key
+- **独立模式**：只需要一个兼容 OpenAI Chat Completions 的 LLM 网关即可
+
+## 项目工作流
+
+```text
+Twitter / X KOL 推文
+  ↓
+Harvest 采集
+  ↓
+Distill 蒸馏
+  ↓
+Forge 锻造
+  ↓
+KOL Skill Bundle
+  ├── OpenClaw skill
+  ├── Codex / OpenAI skill
+  ├── Claude Code subagent
+  └── Portable bundle
+```
+
+## 各模块职责
+
+| 模块 | 职责 |
+|---|---|
+| `Harvest` | 抓取推文，支持 Twitter API / Nitter / 降级方案 |
+| `Distill` | 用 LLM 提取交易信号、风格、叙事、模式 |
+| `Forge` | 生成 KOL Skill 文件，并安装到不同 agent 目标 |
+| `Consult` | 加载 KOL Skills，结合链上数据输出综合分析 |
+
+## 适用场景
+
+适合以下需求：
+
+- 你想把某个 KOL 的历史观点整理成一个长期可复用的 agent skill
+- 你希望同一个 KOL Skill 同时给 OpenClaw、Claude Code、Codex、其他 agent 使用
+- 你想做“多 KOL 共识分析”，而不是手工翻历史推文
+- 你想把 KOL 的判断模式沉淀成结构化知识，而不是一次性总结
+
+## 重名处理
+
 - 如果生成出的 skill 名已被占用，CopyAlpha 会自动追加后缀，例如 `kol-username-2`。
 - 如果已存在的 bundle 本来就是同一个 KOL，CopyAlpha 会直接复用并更新，而不是再生成一份重复技能。
 
-## Maintainer Notes / 维护者说明
+## 发布检查（维护者）
 
 ```bash
 npm install
@@ -131,16 +327,20 @@ npm test
 NPM_CONFIG_CACHE=/tmp/copyalpha-npm-cache npm run pack:check
 ```
 
-Then publish / 然后发布：
+然后发布：
 
 ```bash
 npm version patch
 npm publish
 ```
 
-## Roadmap / 路线图
+## 路线图
 
-- Better skill gallery previews / 更好的 skill 展示页
-- Python SDK or Python wrapper / Python SDK 或 Python 包装层
-- Hosted skill registry / 托管式 skill registry
-- More KOL refresh automation / 更完整的 KOL 增量更新自动化
+- 更好的 skill 展示页
+- Python SDK / Python 包装层
+- 托管式 skill registry
+- 更完整的 KOL 增量更新自动化
+
+## License
+
+Apache-2.0
