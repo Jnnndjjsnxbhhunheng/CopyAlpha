@@ -64,7 +64,7 @@ program
     console.log(`Generated skills dir: ${result.generatedSkillsDir}`);
     console.log("\nNext steps:");
     console.log(`  1. Fill secrets in ${path.join(result.workspaceDir, ".env")}`);
-    console.log("  2. Run: copyalpha forge materialize @username --install");
+    console.log("  2. Run: copyalpha forge materialize @username");
   });
 
 program
@@ -169,9 +169,9 @@ forgeCmd
 
 forgeCmd
   .command("materialize <username>")
-  .description("Track, harvest, forge, and optionally install a brand new KOL Skill")
+  .description("Track, harvest, forge, and install a brand new KOL Skill into local agent skill systems")
   .option("-c, --count <count>", "Historical tweet count to scrape")
-  .option("--install", "Install the generated skill into global agent locations")
+  .option("--no-install", "Skip installing the generated skill into local agent skill systems")
   .option("-t, --targets <targets>", "Comma-separated install targets: openclaw,codex,claude,bundle", "openclaw,codex,claude,bundle")
   .option("--force-install", "Overwrite existing installed skill targets")
   .option("--bundle-home <dir>", "Override generic bundle home")

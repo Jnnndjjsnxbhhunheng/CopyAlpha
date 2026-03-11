@@ -6,7 +6,7 @@
 
 [![中文文档](https://img.shields.io/badge/Docs-%E4%B8%AD%E6%96%87-1677FF?style=for-the-badge&logo=bookstack&logoColor=white)](README.zh-CN.md)
 [![English Docs](https://img.shields.io/badge/Docs-English-7C3AED?style=for-the-badge&logo=readme&logoColor=white)](README.en.md)
-[![npx](https://img.shields.io/badge/npx-copyalpha@latest-CB3837?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/)
+[![Run from GitHub](https://img.shields.io/badge/Run-GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Jnnndjjsnxbhhunheng/CopyAlpha)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-339933?style=for-the-badge&logo=node.js&logoColor=white)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](package.json)
 [![Python Planned](https://img.shields.io/badge/Python-Planned-3776AB?style=for-the-badge&logo=python&logoColor=white)](README.en.md)
@@ -30,7 +30,7 @@ It is a reusable knowledge-packaging pipeline for agent-native workflows.
 If you are an end user, the shortest path is:
 
 ```bash
-npx copyalpha@latest install-skill
+npx skills add Jnnndjjsnxbhhunheng/CopyAlpha
 ```
 
 Restart your agent runtime, then say:
@@ -48,25 +48,33 @@ After filling the minimum `.env` config, CopyAlpha will:
 
 ## Installation Options
 
-### Recommended: published npm package
+### Recommended: install via `skills add`
 
 ```bash
-npx copyalpha@latest install-skill
+npx skills add Jnnndjjsnxbhhunheng/CopyAlpha
 ```
 
 Best for most users because it:
 
-- pulls a prebuilt CLI from npm
-- does not require a local repo checkout
-- installs the factory skill directly into `OpenClaw`, `Codex`, `Claude Code`, and portable bundle locations
+- installs the repository's `skills/` directory as a native skill source
+- matches the `npx skills add okx/onchainos-skills` experience
+- is already recognized by the `skills` CLI as exposing `copyalpha-kol-factory`
 
-### GitHub fallback
+### CLI install path
 
 ```bash
 npx github:Jnnndjjsnxbhhunheng/CopyAlpha install-skill
 ```
 
-Use this when npm is not published yet or when you want to test the main branch directly.
+Use this when you want to run the CLI installer directly and write the factory skill into multiple agent directories.
+
+### npm CLI
+
+```bash
+npx copyalpha@latest install-skill
+```
+
+Use this after the npm package is visible and you prefer the published CLI package.
 
 ### Local development install
 
@@ -82,10 +90,18 @@ copyalpha install-skill
 ### 1) Install the factory skill
 
 ```bash
-npx copyalpha@latest install-skill
+npx skills add Jnnndjjsnxbhhunheng/CopyAlpha
 ```
 
-This installs `copyalpha-kol-factory` into:
+This installs the repository skill `copyalpha-kol-factory` into your local skill system.
+
+If you want the CLI to write directly into multiple agent directories instead, run:
+
+```bash
+npx github:Jnnndjjsnxbhhunheng/CopyAlpha install-skill
+```
+
+The CLI path installs `copyalpha-kol-factory` into:
 
 - `~/.openclaw/skills/copyalpha-kol-factory/`
 - `~/.codex/skills/copyalpha-kol-factory/`
@@ -125,8 +141,8 @@ Common OpenClaw settings:
 Under the hood, this is equivalent to:
 
 ```bash
-npx copyalpha@latest init
-npx copyalpha@latest forge materialize @inversebrah --install --targets openclaw,codex,claude,bundle
+npx github:Jnnndjjsnxbhhunheng/CopyAlpha init
+npx github:Jnnndjjsnxbhhunheng/CopyAlpha forge materialize @inversebrah --install --targets openclaw,codex,claude,bundle
 ```
 
 ### 6) Use the generated KOL skill
@@ -191,18 +207,33 @@ In practice this means:
 
 ## Maintainer Release Check
 
+Keep these two layers separate:
+
+- `copyalpha`: the CLI package that gets published to npm.
+- `kol-*`: generated runtime skill folders installed into local skill systems; they do **not** need a separate publish step.
+
 ```bash
 npm install
-npm run build
-npm test
-NPM_CONFIG_CACHE=/tmp/copyalpha-npm-cache npm run pack:check
+npm run release:check
 ```
 
-Then publish:
+Publish locally:
 
 ```bash
 npm version patch
-npm publish
+npm run release:publish
+```
+
+Publish via GitHub Actions:
+
+- add `NPM_TOKEN` in repository secrets
+- push a version tag such as `v2.0.1`
+- the workflow in `.github/workflows/publish-npm.yml` will publish the package
+
+After `copyalpha` is actually published on npm, end users can switch back to:
+
+```bash
+npx copyalpha@latest install-skill
 ```
 
 ## Roadmap

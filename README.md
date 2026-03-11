@@ -6,7 +6,7 @@
 
 [![中文文档](https://img.shields.io/badge/Docs-%E4%B8%AD%E6%96%87-1677FF?style=for-the-badge&logo=bookstack&logoColor=white)](README.zh-CN.md)
 [![English Docs](https://img.shields.io/badge/Docs-English-7C3AED?style=for-the-badge&logo=readme&logoColor=white)](README.en.md)
-[![npx](https://img.shields.io/badge/npx-copyalpha@latest-CB3837?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/)
+[![Run from GitHub](https://img.shields.io/badge/Run-GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Jnnndjjsnxbhhunheng/CopyAlpha)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-339933?style=for-the-badge&logo=node.js&logoColor=white)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](package.json)
 [![Python Planned](https://img.shields.io/badge/Python-Planned-3776AB?style=for-the-badge&logo=python&logoColor=white)](README.md)
@@ -30,7 +30,7 @@ CopyAlpha 是一个 **KOL Skill 工厂**。
 如果你是最终用户，最短流程只有 3 步：
 
 ```bash
-npx copyalpha@latest install-skill
+npx skills add Jnnndjjsnxbhhunheng/CopyAlpha
 ```
 
 重启你的 agent 工具，然后对它说：
@@ -48,26 +48,33 @@ Use $copyalpha-kol-factory to harvest @inversebrah and forge a new KOL skill.
 
 ## 安装方式
 
-### 正式发布版（推荐）
+### 推荐：像 OKX 一样通过 `skills add` 安装
 
 ```bash
-npx copyalpha@latest install-skill
-npx skills add okx/onchainos-skills
+npx skills add Jnnndjjsnxbhhunheng/CopyAlpha
 ```
 
 适合大多数最终用户：
 
-- 直接从 npm 拉取已构建好的 CLI
-- 不依赖本地仓库副本
-- 安装后即可把工厂 Skill 写入 `OpenClaw` / `Codex` / `Claude Code` / 通用 bundle 目录
+- 直接把仓库中的 `skills/` 作为技能源安装
+- 安装体验与 `npx skills add okx/onchainos-skills` 一致
+- `skills` CLI 已可识别本仓库中的 `copyalpha-kol-factory`
 
-### GitHub 回退安装
+### CLI 方式（适合脚本化或不使用 `skills add` 时）
 
 ```bash
 npx github:Jnnndjjsnxbhhunheng/CopyAlpha install-skill
 ```
 
-适合 npm 还没发布、或你想先试主分支版本时使用。
+适合直接运行 CLI 安装器，或你想手动把工厂 Skill 写入多个 agent 目录时使用。
+
+### npm CLI（发布后可用）
+
+```bash
+npx copyalpha@latest install-skill
+```
+
+适合 npm 包已经同步可见后使用。
 
 ### 本地开发安装
 
@@ -85,10 +92,18 @@ copyalpha install-skill
 ### 1) 安装工厂 Skill
 
 ```bash
-npx copyalpha@latest install-skill
+npx skills add Jnnndjjsnxbhhunheng/CopyAlpha
 ```
 
-这个命令会把 `copyalpha-kol-factory` 安装到以下位置：
+这个命令会把仓库里的 `copyalpha-kol-factory` 安装进你的本地 skill 系统。
+
+如果你希望手动用 CLI 直接写入多个 agent 目录，也可以执行：
+
+```bash
+npx github:Jnnndjjsnxbhhunheng/CopyAlpha install-skill
+```
+
+CLI 方式会把 `copyalpha-kol-factory` 安装到以下位置：
 
 - OpenClaw：`~/.openclaw/skills/copyalpha-kol-factory/`
 - Codex / OpenAI 风格：`~/.codex/skills/copyalpha-kol-factory/`
@@ -131,8 +146,8 @@ Use $copyalpha-kol-factory to harvest @inversebrah and forge a new KOL skill.
 底层等价于执行：
 
 ```bash
-npx copyalpha@latest init
-npx copyalpha@latest forge materialize @inversebrah --install --targets openclaw,codex,claude,bundle
+npx github:Jnnndjjsnxbhhunheng/CopyAlpha init
+npx github:Jnnndjjsnxbhhunheng/CopyAlpha forge materialize @inversebrah --install --targets openclaw,codex,claude,bundle
 ```
 
 这一步会自动完成：
@@ -336,18 +351,33 @@ KOL Skill Bundle
 
 ## 发布检查（维护者）
 
+注意区分两层：
+
+- `copyalpha`：这是要发布到 npm 的 CLI 包。
+- `kol-*`：这是运行时生成并安装到本地 skill 系统里的技能目录，**不需要单独发布**。
+
 ```bash
 npm install
-npm run build
-npm test
-NPM_CONFIG_CACHE=/tmp/copyalpha-npm-cache npm run pack:check
+npm run release:check
 ```
 
-然后发布：
+本地发布：
 
 ```bash
 npm version patch
-npm publish
+npm run release:publish
+```
+
+GitHub Actions 发布：
+
+- 在仓库里配置 `NPM_TOKEN`
+- 推送版本标签，例如 `v2.0.1`
+- 工作流会执行 `.github/workflows/publish-npm.yml`
+
+当 `copyalpha` 首次成功发布到 npm 后，终端用户就可以重新使用：
+
+```bash
+npx copyalpha@latest install-skill
 ```
 
 ## 路线图

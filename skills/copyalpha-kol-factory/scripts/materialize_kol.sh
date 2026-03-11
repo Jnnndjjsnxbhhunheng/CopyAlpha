@@ -4,8 +4,8 @@ set -euo pipefail
 workspace_dir="${1:?workspace_dir is required}"
 username="${2:?username is required}"
 history_depth="${3:-}"
-npx_spec="${COPYALPHA_NPX_SPEC:-copyalpha@latest}"
 install_targets="${COPYALPHA_INSTALL_TARGETS:-openclaw,codex,claude,bundle}"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 cd "$workspace_dir"
 
@@ -14,7 +14,7 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
-cmd=(npx --yes "$npx_spec" forge materialize "$username" --install --targets "$install_targets" --force-install)
+cmd=("$script_dir/run_copyalpha.sh" forge materialize "$username" --targets "$install_targets" --force-install)
 
 if [ -n "$history_depth" ]; then
   cmd+=(--count "$history_depth")

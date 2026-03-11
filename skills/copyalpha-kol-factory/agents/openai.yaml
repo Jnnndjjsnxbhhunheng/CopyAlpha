@@ -1,7 +1,7 @@
 interface:
   display_name: "CopyAlpha KOL Factory"
-  short_description: "抓取推特 KOL 并沉淀为全新的交易 Skill"
-  default_prompt: "Use $copyalpha-kol-factory to harvest @inversebrah and forge a new KOL skill."
+  short_description: "抓取推特 KOL 并直接写入本地技能系统"
+  default_prompt: "Use $copyalpha-kol-factory to harvest @inversebrah, forge a new KOL skill, and install it directly into the local skill system."
 
 policy:
   allow_implicit_invocation: true

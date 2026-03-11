@@ -3,7 +3,7 @@ name: {{skill_name}}
 description: >
   @{{username}} 的交易智慧 Skill。{{#if trading_style}}该 KOL 擅长 {{join preferred_sectors ", "}} 赛道的{{timeframe_label}}交易，
   偏好{{approach_label}}分析。{{/if}}{{#if win_rate}}历史推文胜率 {{percent win_rate}}%。{{/if}}
-  AI Agent 可调用此 Skill 获取该 KOL 的观点、风格和历史判断模式。
+  AI Agent 可调用此 Skill 获取该 KOL 的观点、风格和历史判断模式；该 Skill 设计为本地安装后直接使用，无需单独发布。
 source: CopyAlpha v2.0
 updated_at: {{updated_at}}
 tweet_count: {{tweet_count}}
@@ -12,6 +12,8 @@ signal_count: {{signal_count}}
 ---
 
 # @{{username}} 交易智慧 Skill
+
+> 该 Skill 由 CopyAlpha 生成后可直接安装到本地 Skill 系统中使用，无需发布到 npm 或其他注册表。
 
 ## 何时调用此 Skill
 
